@@ -8,12 +8,14 @@
 //////////// BEGINNING OF MAIN FUNCTION ///////////////////////
 // "Global" variables that we'll use "throughout"
 // just a switch to use in order to disable options for debugging information.
-shouldUseDebuggingOptions = false;
+shouldUseDebuggingOptions = true;
 // the high and low thresholds are not saved, so they are always set to these defaults
 // threshold for detecting the entire kernel
 lowTH = 60;
 // threshold for detecting the chalky region
 hiTH = 185;
+// number of pixels per milimeter
+ppm = 11.5;
 
 // whether or not we'll use batch mode, which really speeds things up
 useBatchMode = false;
@@ -252,6 +254,11 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 	rawCoordResults = DynamicCoordGetter(shouldWaitForUserRaw);
 	rawCoordResultsRowCount = nResults;
 	rawCoordResultsColCount = 4;
+	// delete corners
+	rawCoordResults2 = deleteCorners(rawCoordResults, rawCoordResultsRowCount, rawCoordResultsColCount);
+	// update raw coordinate results array
+	rawCoordResults = rawCoordResults2;
+	rawCoordResultsRowCount = lengthOf(rawCoordResults) / rawCoordResultsColCount;
 	// displays options explanation
 	if(shouldWaitForUserRaw){
 		showMessageWithCancel("Action Required",
@@ -881,6 +888,75 @@ function preNormalizationSort(array,rcX,rcY,grpTol){
 		twoDArraySwap(array,rcX,rcY,mRecInd,i);
 	}//end looping over coords
 }//end preNormalizationSort()
+
+function deleteCorners(d2Array, xT, yT){
+	/* deletes elements in 2d array which touch the corners of the image.
+	 returns new array. This function is meant to work on an array of cell
+	 coords, not an array of seed coords.*/
+	 // tolerance for left x
+	 xTolL = 1;
+	 // tolerance for right x
+	 xTolR = 1;
+	 // tolerance for top y
+	 yTolUp = 1;
+	 // tolerance for bottom y
+	 yTolBot = 1;
+	 // find borders of image
+	 imgWidth = 0;
+	 imgHeight = 0;
+	 temp = 0;
+	 // out parameter configuration ???
+	 getDimensions(imgWidth, imgHeight, temp, temp, temp);
+	 // account for pixels-to-milimeter
+	 imgWidth = imgWidth / ppm;
+	 imgHeight = imgHeight / ppm;
+	 // make array to keep track of indexes with corners
+	 badInd = newArray();
+	 // loop through and find corners
+	 for(i = 0; i < xT; i++){
+		// retrieve x,y,width,height for this index
+	 	d2x = twoDArrayGet(d2Array, xT, yT, i, 0);
+	 	d2y = twoDArrayGet(d2Array, xT, yT, i, 1);
+	 	d2w = twoDArrayGet(d2Array, xT, yT, i, 2);
+	 	d2h = twoDArrayGet(d2Array, xT, yT, i, 3);
+	 	// test for top left corner
+	 	if(abs(d2x - 0) < xTolL && abs(d2y - 0) < yTolUp){
+	 		// keep track of index of corner
+	 		badInd = Array.concat(badInd,i);
+	 	}//end if we found top left corner
+	 	else if(abs((d2x+d2w) - imgWidth) < xTolR && abs(d2y - 0) < yTolUp){
+	 		// keep track of index of corner
+	 		badInd = Array.concat(badInd,i);
+	 	}//end else if we found the top right corner
+	 	else if(abs(d2x - 0) < xTolL && abs((d2y+d2h) - imgHeight) < yTolBot){
+	 		// keep track of index of corner
+	 		badInd = Array.concat(badInd,i);
+	 	}//end else if we found the bottom left corner
+	 	else if(abs((d2x+d2w) - imgWidth) < xTolR &&
+	 			abs((d2y+d2h) - imgHeight) < yTolBot){
+	 		// keep track of index of corner
+	 		badInd = Array.concat(badInd,i);
+	 	}//end else if we found the bottom right corner
+	 }//end looping over d2Array
+	 // now that we know how many corners there are, we can
+	 // create an array to hold the non-corners
+	 xT2 = (lengthOf(d2Array) / yT) - lengthOf(badInd);
+	 d2Array2 = twoDArrayInit(xT2, yT);
+	 // create a reference variable for next index in d2Array
+	 nxtInd = 0;
+	 // add all the non-corner indexes to the new array
+	 for(i = 0; i < xT; i++){
+	 	if(!contains(badInd, i)){
+	 		for(j = 0; j < yT; j++){
+	 			temp = twoDArrayGet(d2Array, xT, yT, i, j);
+	 			twoDArraySet(d2Array2, xT2, yT, nxtInd, j, temp);
+	 		}//end copying each 2d elem over
+	 		nxtInd++;
+	 	}//end if this element isn't a corner
+	 }//end copying parts of the old array into new array
+	 //debugthis
+	 return d2Array2;
+}//end deleteCorners(d2Array, xT, yT)
 
 function deleteDuplicates(d2Array, xT, yT){
 	// deletes elements in 2d array with very similar X and Y, returns new array
