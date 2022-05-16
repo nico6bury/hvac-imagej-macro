@@ -10,7 +10,7 @@
 // just a switch to use in order to disable options for debugging information.
 shouldUseDebuggingOptions = true;
 // whether we should ignore error prevention checks in case they cause issues
-ignorePossibleErrors = true;
+ignorePossibleErrors = false;
 // the high and low thresholds are not saved, so they are always set to these defaults
 // threshold for detecting the entire kernel
 lowTH = 60;
