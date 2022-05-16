@@ -9,6 +9,8 @@
 // "Global" variables that we'll use "throughout"
 // just a switch to use in order to disable options for debugging information.
 shouldUseDebuggingOptions = true;
+// whether we should ignore error prevention checks in case they cause issues
+ignorePossibleErrors = true;
 // the high and low thresholds are not saved, so they are always set to these defaults
 // threshold for detecting the entire kernel
 lowTH = 60;
@@ -894,13 +896,13 @@ function deleteCorners(d2Array, xT, yT){
 	 returns new array. This function is meant to work on an array of cell
 	 coords, not an array of seed coords.*/
 	 // tolerance for left x
-	 xTolL = 1;
+	 xTolL = 10;
 	 // tolerance for right x
-	 xTolR = 1;
+	 xTolR = 10;
 	 // tolerance for top y
-	 yTolUp = 1;
+	 yTolUp = 10;
 	 // tolerance for bottom y
-	 yTolBot = 1;
+	 yTolBot = 10;
 	 // find borders of image
 	 imgWidth = 0;
 	 imgHeight = 0;
@@ -1064,7 +1066,9 @@ function normalizeCellCount(d2Arr, xT, yT){
 				d = twoDArraySet(coordRecord,gridCells,4,curRecInd,3,h);
 				// check that we're in bounds
 				if(a == false || b == false || c == false || d == false){
-					return newArray(0);
+					if(ignorePossibleErrors != true){
+						return newArray(0);
+					}//end if we don't want to ignore possible errors
 				}//end if we found a problem
 				// print something to the log
 				print("found a normal cell, indexed to "+curRecInd +
@@ -1157,11 +1161,12 @@ function constructGroups(coords2d,rcX,rcY,maxRows,maxRowLen,groupTol){
 		a = threeDArraySet(coordGroups,maxRowLen,4,curGroup,curGroupInd,0,x1);
 		b = threeDArraySet(coordGroups,maxRowLen,4,curGroup,curGroupInd,1,thisY);
 		c = threeDArraySet(coordGroups,maxRowLen,4,curGroup,curGroupInd,2,width1);
-		d = threeDArraySet(coordGroups,maxRowLen,4,curGroup,curGroupInd,3,
-		height1);
+		d = threeDArraySet(coordGroups,maxRowLen,4,curGroup,curGroupInd,3,height1);
 		// check that nothing went wrong
 		if(a == false || b == false || c == false || d == false){
-			return newArray(0);
+			if(ignorePossibleErrors != true){
+				return newArray(0);			
+			}//end if we're not ignoring possible errors
 		}//end if something went wrong
 		
 		// update various reference variables
