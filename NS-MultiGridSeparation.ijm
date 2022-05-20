@@ -127,6 +127,218 @@ function DynamicCoordGetter(shouldWait){
 	return coordsArray;
 }//end DynamicCoordGetter(shouldWait)
 
+function deleteCorners(d2Array, xT, yT){
+	/* deletes elements in 2d array which touch the corners of the image.
+	 returns new array. This function is meant to work on an array of cell
+	 coords, not an array of seed coords.*/
+	 // tolerance for left x
+	 xTolL = 10;
+	 // tolerance for right x
+	 xTolR = 10;
+	 // tolerance for top y
+	 yTolUp = 10;
+	 // tolerance for bottom y
+	 yTolBot = 10;
+	 // find borders of image
+	 imgWidth = 0;
+	 imgHeight = 0;
+	 temp = 0;
+	 // out parameter configuration ???
+	 getDimensions(imgWidth, imgHeight, temp, temp, temp);
+	 // account for pixels-to-milimeter
+	 imgWidth = imgWidth / ppm;
+	 imgHeight = imgHeight / ppm;
+	 // make array to keep track of indexes with corners
+	 badInd = newArray();
+	 // loop through and find corners
+	 for(i = 0; i < xT; i++){
+		// retrieve x,y,width,height for this index
+	 	d2x = twoDArrayGet(d2Array, xT, yT, i, 0);
+	 	d2y = twoDArrayGet(d2Array, xT, yT, i, 1);
+	 	d2w = twoDArrayGet(d2Array, xT, yT, i, 2);
+	 	d2h = twoDArrayGet(d2Array, xT, yT, i, 3);
+	 	// test for top left corner
+	 	if(abs(d2x - 0) < xTolL && abs(d2y - 0) < yTolUp){
+	 		// keep track of index of corner
+	 		badInd = Array.concat(badInd,i);
+	 	}//end if we found top left corner
+	 	else if(abs((d2x+d2w) - imgWidth) < xTolR && abs(d2y - 0) < yTolUp){
+	 		// keep track of index of corner
+	 		badInd = Array.concat(badInd,i);
+	 	}//end else if we found the top right corner
+	 	else if(abs(d2x - 0) < xTolL && abs((d2y+d2h) - imgHeight) < yTolBot){
+	 		// keep track of index of corner
+	 		badInd = Array.concat(badInd,i);
+	 	}//end else if we found the bottom left corner
+	 	else if(abs((d2x+d2w) - imgWidth) < xTolR &&
+	 			abs((d2y+d2h) - imgHeight) < yTolBot){
+	 		// keep track of index of corner
+	 		badInd = Array.concat(badInd,i);
+	 	}//end else if we found the bottom right corner
+	 }//end looping over d2Array
+	 // now that we know how many corners there are, we can
+	 // create an array to hold the non-corners
+	 xT2 = (lengthOf(d2Array) / yT) - lengthOf(badInd);
+	 d2Array2 = twoDArrayInit(xT2, yT);
+	 // create a reference variable for next index in d2Array
+	 nxtInd = 0;
+	 // add all the non-corner indexes to the new array
+	 for(i = 0; i < xT; i++){
+	 	if(!contains(badInd, i)){
+	 		for(j = 0; j < yT; j++){
+	 			temp = twoDArrayGet(d2Array, xT, yT, i, j);
+	 			twoDArraySet(d2Array2, xT2, yT, nxtInd, j, temp);
+	 		}//end copying each 2d elem over
+	 		nxtInd++;
+	 	}//end if this element isn't a corner
+	 }//end copying parts of the old array into new array
+	 //debugthis
+	 return d2Array2;
+}//end deleteCorners(d2Array, xT, yT)
+
+function deleteDuplicates(d2Array, xT, yT){
+	// deletes elements in 2d array with very similar X and Y, returns new array
+	// tolerance for x values closeness
+	xTol = 2;
+	// tolerance for y values closeness
+	yTol = 5;
+	Array.print(d2Array);
+	// array to hold index of bad coordinates
+	badInd = newArray(0);
+	// find extremely similar indexes
+	for(i = 0; i < xT; i++){
+		// Note: might want to exclude processing of bad indexes here
+		if(contains(badInd, i) == false){
+			// get x and y for i
+			d2x = twoDArrayGet(d2Array, xT, yT, i, 0);
+			d2y = twoDArrayGet(d2Array, xT, yT, i, 1);
+			for(j = i+1; j < xT; j++){
+				diffX = abs(d2x - twoDArrayGet(d2Array, xT, yT, j, 0));
+				diffY = abs(d2y - twoDArrayGet(d2Array, xT, yT, j, 1));
+				if(diffX < xTol && diffY < yTol){
+					/*print(twoDArrayGet(d2Array, xT, yT, j, 0));
+					print(twoDArrayGet(d2Array, xT, yT, j, 1));
+					print(twoDArrayGet(d2Array, xT, yT, j, 2));
+					print(twoDArrayGet(d2Array, xT, yT, j, 3));
+					waitForUser("diffX:" + diffX + " diffY:" + diffY +
+					"\nx:" + d2x + " y:" + d2y);*/
+					badInd = Array.concat(badInd,j);
+				}//end if this is VERY close to d2Array[i]
+			}//end looping all the rest of the array
+		}//end if this array is good
+	}//end looping over d2Array
+	// make array based on learned dimensions
+	rnLng = xT - lengthOf(badInd);
+	rtnArr = twoDArrayInit(rnLng, yT);
+	curRtnInd = 0;
+	// add good indices to new array
+	for(i = 0; i < xT; i++){
+		if(contains(badInd, i) == false){
+			x = twoDArrayGet(d2Array, xT, yT, i, 0);
+			y = twoDArrayGet(d2Array, xT, yT, i, 1);
+			w = twoDArrayGet(d2Array, xT, yT, i, 2);
+			h = twoDArrayGet(d2Array, xT, yT, i, 3);
+			twoDArraySet(rtnArr, rnLng, yT, curRtnInd, 0, x);
+			twoDArraySet(rtnArr, rnLng, yT, curRtnInd, 1, y);
+			twoDArraySet(rtnArr, rnLng, yT, curRtnInd, 2, w);
+			twoDArraySet(rtnArr, rnLng, yT, curRtnInd, 3, h);
+			curRtnInd++;
+		}//end if this isn't a bad index
+	}//end looping over original array
+	return rtnArr;
+}//end deleteDuplicates(d2Array, xT, yT)
+
+function normalizeCellCount(d2Arr, xT, yT){
+	// normalize the cell count of rawCoords to gridCells
+	// initialize 2d array we'll put our coordinates into before group construction
+	coordRecord = twoDArrayInit(gridCells, 4);
+	// check to make sure we have the right number of cells
+	if(nResults < gridCells){
+		if(shouldShowRoutineErrors == true){
+			showMessageWithCancel("Unexpected Cell Number",
+		"In the file " + File.getName(chosenFilePath) + ", which is located at \n" +
+		chosenFilePath + ", \n" +
+		"it seems that we were unable to detect the location of every cell. \n" + 
+		"There should be " + gridCells + " cells in the grid, but we have only \n" + 
+		"detected " + nResults + " of them. This could be very problematic later on.");
+		}//end if we want to show a routine error
+		return newArray(0);
+	}//end if we haven't detected all the cells we should have
+	else if(nResults > gridCells){
+		// we'll need to delete extra cells
+		curCellCt = nResults;
+		// if less than tol, then on same row
+		inCelTol = 2.7;// was 1.5
+		// if more than tol, then on different row
+		outCelTol = 10;
+		// current index we're putting stuff into for coordRecord
+		curRecInd = 0;
+		// set most recent Y by default as first Y
+		mRecY = twoDArrayGet(d2Arr,xT,yT,0,1);
+		// set most recent difference to 0
+		mRecDiff = 0;
+		for(i = 0; i < xT; i++){
+			// figure out how this Y compares to last one
+			thisY = twoDArrayGet(d2Arr,xT,yT,i,1);
+			x = twoDArrayGet(d2Arr,xT,yT,i,0);
+			w = twoDArrayGet(d2Arr,xT,yT,i,2);
+			h = twoDArrayGet(d2Arr,xT,yT,i,3);
+			diffFromRec = abs(thisY - mRecY);
+			if(diffFromRec < inCelTol || diffFromRec > outCelTol){
+				// add this index of rawCoordResults to coordRecord
+				a = twoDArraySet(coordRecord,gridCells,4,curRecInd,0,x);
+				b = twoDArraySet(coordRecord,gridCells,4,curRecInd,1,thisY);
+				c = twoDArraySet(coordRecord,gridCells,4,curRecInd,2,w);
+				d = twoDArraySet(coordRecord,gridCells,4,curRecInd,3,h);
+				// check that we're in bounds
+				if(a == false || b == false || c == false || d == false){
+					if(ignorePossibleErrors != true){
+						return newArray(0);
+					}//end if we don't want to ignore possible errors
+				}//end if we found a problem
+				// print something to the log
+				print("found a normal cell, indexed to "+curRecInd +
+				", diffFromRec of " + diffFromRec);
+				// increment curRecInd to account for addition
+				curRecInd++;
+			}//end if we think differences look normal
+			else if(mRecDiff > inCelTol && mRecDiff < outCelTol){
+				// add this index of rawCoordResults to coordRecord
+				twoDArraySet(coordRecord,gridCells,4,curRecInd,0,x);
+				twoDArraySet(coordRecord,gridCells,4,curRecInd,1,thisY);
+				twoDArraySet(coordRecord,gridCells,4,curRecInd,2,w);
+				twoDArraySet(coordRecord,gridCells,4,curRecInd,3,h);
+				// print something to the log
+				print("found a bad cell, but it's only bad because of last");
+				// increment curRecInd to account for addition
+				curRecInd++;
+			}//end else if last one was not good, so this one is bad because of that
+			else{
+				// print something to the log
+				print("found the start of a bad cell, not adding it");
+			}//end else we found the start of a bad cell
+
+			// set most recent Y again so it's updated for next iteration
+			mRecDiff = diffFromRec;
+			mRecY = thisY;
+		}//end looping over cells in rawCoordResults
+		// quick fix for renaming files
+		if(shouldOutputRawCoords == true){
+			fileNameBase = File.getName(chosenFilePath);
+			folderSpecifier = newFolderNameRaw;
+			if(outputToNewFolderRaw == false) folderSpecifier = false;
+			saveRawResultsArray(coordRecord,gridCells,4,
+			chosenFilePath,newArray("BX","BY","Width","Height"),
+			folderSpecifier,"Corrected Coordinates - " + fileNameBase);
+		}//end if we're outputting a file
+	}//end else if there are too many cells
+	else{
+		// just set coordResult to rawCoordResults
+		coordRecord = rawCoordResults;
+	}//end else we have the right number of cells
+	return coordRecord;
+}//end normalizeCellCount()
+
 /*
  * 
  */
