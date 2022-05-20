@@ -7,24 +7,12 @@
  */
 
 // Overview of process for getting grid boundaries
-// 1. Get location of all the cells in the grids
-// 2. Come up with some sort of algorithm for snaking through all the cells in order
-// to group all the cells that belong to a particular grid together. Primarily, I was
-// thinking of testing for adjacency, as cells that are in the same grid will have
-// very similar locations after accounting for cell size. It might take some work in
-// order to come up with an algorithm that is actually efficient, but I don't know
-// when I'll ever get a chance to refactor things, so I'll have to spend some upfront
-// time on figuring this out.
-// 3. Once I have figured out groups which separate the cells from each grid, I'll need
-// to come up with coordinates for the boundaries of the grids in terms of topmost,
-// bottommost, rightmost, leftmost of the coordinates for the cells. Then I can
-// extrapolate outwards a constant value from those boundaries in order to acquire
-// some new boundaries from the entire grid.
-// 4. From here, create regions of interest within the original picture, and then create
-// copy images for each grid.
-// 5. Now, for each grid, do some sort of shape analysis in order to determine if the
-// grid needs to be flipped or rotated. I'll leave this up to the future me.
-// 6. Once these new, edited images are exported, this macro will be done
+// 1. Flip and rotate the image so that each of the grids is vertical. We'll
+// just assume that the grid is in a particular configuration.
+// 2. Use particle analysis to find big ol' strips of cells in each grid
+// 3. Group those strips together in order to find the bounds of each grid.
+// 4. Create duplicate images from the bounds of each grid.
+// 5. Export the images
 
 // Additional things that should be added
 // 1. Command line options/parameters in order to allow other macros to use this macro
@@ -127,18 +115,19 @@ function DynamicCoordGetter(shouldWait){
 	return coordsArray;
 }//end DynamicCoordGetter(shouldWait)
 
-function deleteCorners(d2Array, xT, yT){
-	/* deletes elements in 2d array which touch the corners of the image.
+// hold off on this one as well :-(
+function deleteEdges(d2Array, xT, yT){
+	/* deletes elements in 2d array which touch the edges of the image.
 	 returns new array. This function is meant to work on an array of cell
 	 coords, not an array of seed coords.*/
 	 // tolerance for left x
-	 xTolL = 10;
+	 xTolL = 5;
 	 // tolerance for right x
-	 xTolR = 10;
+	 xTolR = 5;
 	 // tolerance for top y
-	 yTolUp = 10;
+	 yTolUp = 5;
 	 // tolerance for bottom y
-	 yTolBot = 10;
+	 yTolBot = 5;
 	 // find borders of image
 	 imgWidth = 0;
 	 imgHeight = 0;
@@ -158,23 +147,22 @@ function deleteCorners(d2Array, xT, yT){
 	 	d2w = twoDArrayGet(d2Array, xT, yT, i, 2);
 	 	d2h = twoDArrayGet(d2Array, xT, yT, i, 3);
 	 	// test for top left corner
-	 	if(abs(d2x - 0) < xTolL && abs(d2y - 0) < yTolUp){
+	 	if(abs(d2x - 0) < xTolL){
 	 		// keep track of index of corner
 	 		badInd = Array.concat(badInd,i);
-	 	}//end if we found top left corner
-	 	else if(abs((d2x+d2w) - imgWidth) < xTolR && abs(d2y - 0) < yTolUp){
+	 	}//end if we found left edge
+	 	else if(abs(d2y - 0) < yTolUp){
 	 		// keep track of index of corner
 	 		badInd = Array.concat(badInd,i);
-	 	}//end else if we found the top right corner
-	 	else if(abs(d2x - 0) < xTolL && abs((d2y+d2h) - imgHeight) < yTolBot){
+	 	}//end else if we found the top edge
+	 	else if(abs((d2y+d2h) - imgHeight) < yTolBot){
 	 		// keep track of index of corner
 	 		badInd = Array.concat(badInd,i);
-	 	}//end else if we found the bottom left corner
-	 	else if(abs((d2x+d2w) - imgWidth) < xTolR &&
-	 			abs((d2y+d2h) - imgHeight) < yTolBot){
+	 	}//end else if we found the bottom edge
+	 	else if(abs((d2x+d2w) - imgWidth) < xTolR){
 	 		// keep track of index of corner
 	 		badInd = Array.concat(badInd,i);
-	 	}//end else if we found the bottom right corner
+	 	}//end else if we found the right edge
 	 }//end looping over d2Array
 	 // now that we know how many corners there are, we can
 	 // create an array to hold the non-corners
@@ -194,7 +182,7 @@ function deleteCorners(d2Array, xT, yT){
 	 }//end copying parts of the old array into new array
 	 //debugthis
 	 return d2Array2;
-}//end deleteCorners(d2Array, xT, yT)
+}//end deleteEdgess(d2Array, xT, yT)
 
 function deleteDuplicates(d2Array, xT, yT){
 	// deletes elements in 2d array with very similar X and Y, returns new array
@@ -248,6 +236,7 @@ function deleteDuplicates(d2Array, xT, yT){
 	return rtnArr;
 }//end deleteDuplicates(d2Array, xT, yT)
 
+// hold off on this one for now?
 function normalizeCellCount(d2Arr, xT, yT){
 	// normalize the cell count of rawCoords to gridCells
 	// initialize 2d array we'll put our coordinates into before group construction
