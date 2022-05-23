@@ -35,6 +35,7 @@
 
 ////////////////////////////////////////////////////////////////
 ////////////////// BEGINNING OF MAIN PROGRAM ///////////////////
+//// STEP 0: DIALOG and INITIALIZATION
 // valid operating systems
 validOSs = newArray("Windows 10", "Windows 7");
 // chosen operating system
@@ -44,16 +45,44 @@ chosenOS = validOSs[0];
 multiImg = File.openDialog("Please select an image with multiple grids.");
 // open up the image
 open(multiImg);
-// get coordinates of all the cells in the grids
-rawCellCoords = DynamicCoordGetter(true);
+
+//// STEP 1: TRANSFORM the image to what we expect based on what we expect
+transformImg();
+
+//// STEP 2: Find a bunch of CELL STRIPS in the grid
+rawCellCoords = DynamicCoordGetter(false);
 rawCellRows = nResults;
 rawCellCols = rawCellRows / 4;
-// do a bunch of processing to cut out the false positives
+
+//// STEP 3: GROUP the strips together by the grid they appear to belong to
+groupGrids(rawCellCoords, rawCellRows, rawCellCols);
+
+//// STEP 4: Create DUPLICATE images from the supposed BOUNDS of each grid
+
+
+//// STEP 5: EXPORT each image to where it needs to go
+
 
 ////////////////////////////////////////////////////////////////
 ////////////////////// END OF MAIN PROGRAM /////////////////////
 ////////////////// BEGINNING OF FUNCTION LIST //////////////////
 ////////////////////////////////////////////////////////////////
+/*
+ * Transforms the current image in order to make the grids look
+ * vertical + the right orientation (flipped horizontally)
+ */
+function transformImg(){
+	run("Flip Horizontally");
+	run("Rotate 90 Degrees Right");
+}// end transformImg()
+
+/**
+ * Groups the cell strips together based on probably grid location
+ */
+function groupGrids(d2array, d2row, d2col){
+	
+}//end groupGrids
+
 /*
  * Parameter Explanation: shouldWait specifies whether or
  * not the program will give an explanation to the user as it steps
@@ -63,32 +92,15 @@ function DynamicCoordGetter(shouldWait){
 	// gets all the coordinates of the cells
 	// save a copy of the image so we don't screw up the original
 	makeBackup("coord");
-	// horizontally flip the image so we have things alligned properly
-	run("Flip Horizontally");
-	if(shouldWait){
-		showMessageWithCancel("Action Required",
-		"Image has been flipped");
-	}//end if we need to wait
-	/*
-	//save copy of our flipped image if we feel like it
-	if(shouldOutputFlipped){
-		newPth = File.getDirectory(chosenFilePath);
-		newPth += "FlippedImages" + File.separator;
-		File.makeDirectory(newPth);
-		newPth += File.getNameWithoutExtension(chosenFilePath) + "-F.tif";
-		save(newPth);
-	}//end if we should output a flipped image
-	*/
 	// Change image to 8-bit grayscale to we can set a threshold
 	run("8-bit");
 	// set threshold to only detect the cells
-	// threshold we set is 0-126 as of 8/12/2021 12:15
-	// now it's 0-160 as of 8/31/2021 4:00
+	// threshold we set is 0-210 as of 5/23/2022 11:18
 	if(chosenOS == validOSs[0]){
-		setThreshold(0, 126);
+		setThreshold(0, 210);
 	}//end if we're on Windows 10
 	else if(chosenOS == validOSs[1]){
-		setThreshold(0, 160);
+		setThreshold(0, 210);
 	}//end else if we're on Windows 7
 	if(shouldWait){
 		showMessageWithCancel("Action Required",
@@ -101,7 +113,7 @@ function DynamicCoordGetter(shouldWait){
 	"bounding redirect=None decimal=1");
 	// set particle analysis to only detect the cells as particles
 	run("Analyze Particles...", 
-	"size=25-Infinity circularity=0.05-1.00 show=[Overlay Masks] " +
+	"size=60-Infinity circularity=0.05-1.00 show=[Overlay Masks] " +
 	"display exclude clear include");
 	if(shouldWait){
 		showMessageWithCancel("Action Required",
