@@ -50,12 +50,12 @@ open(multiImg);
 transformImg();
 
 //// STEP 2: Find a bunch of CELL STRIPS in the grid
-rawCellCoords = DynamicCoordGetter(false);
-rawCellRows = nResults;
-rawCellCols = rawCellRows / 4;
+// adds all the cells we could find to the roi manager
+DynamicCoordGetter(false);
 
 //// STEP 3: GROUP the strips together by the grid they appear to belong to
-groupGrids(rawCellCoords, rawCellRows, rawCellCols);
+// uses the rois in the roi manager
+groupGrids();
 
 //// STEP 4: Create DUPLICATE images from the supposed BOUNDS of each grid
 
@@ -78,9 +78,47 @@ function transformImg(){
 
 /**
  * Groups the cell strips together based on probably grid location
+ * helper functions:
+ * isAdjacent(i, j)
  */
-function groupGrids(d2array, d2row, d2col){
-	
+function groupGrids(){
+	// number of cells
+	cellSum = roiManager("count");
+	// parallel arrays of [x lower bound, x upper bound, count]
+	gridCounts = newArray(0);
+	gridLowBound = newArray(0);
+	gridUpBound = newArray(0);
+	// counter for setting up loop guard
+	numAssigned = 0; // might not be used ¯\_(ツ)_/¯
+	// iterate over each cell in the grid
+	for(i = 0; i < cellSum; i++){
+		// only proceed if the current grid hasn't been assigned
+		roiManager("select", i);
+		if(Roi.getGroup() == 0){
+			// figure out a group to assign it to based off of x-position
+			/*
+			 * Okay, so figuring out which group to assign the cell will
+			 * be sorta difficult. If we don't have any groups, then we
+			 * should create a new group by adding our current one to
+			 * that new group. Otherwise, if we want to assign the roi
+			 * to a new group, we should cycle through the current groups.
+			 * If we find a group that the roi ether fits inside of or is
+			 * very close to, then we should put this roi there. Otherwise,
+			 * if it doesn't fit into any group, then we should probably
+			 * yeet the grid into a new group. Now, there is an immediate
+			 * problem with this method. If a group has very few roi in it
+			 * when we check it, it's possible that our roi would eventually
+			 * fit into the group, but it just doesn't fit yet. In that case,
+			 * we're almost guarenteed that for a lot of images, we'll end up
+			 * with overlapping groups. This is kinda a problem. As a result,
+			 * we'll need to have a separate function with the purpose of
+			 * merging groups that overlap. It would also be good to have some
+			 * sort of debug function which allows you to flatten the rois which
+			 * belong to the same group together, as that way we can directly see
+			 * the regions on the image, which will be useful for debugging.
+			 */
+		}//end if we need to assign this grid
+	}// end iterating over each cell in the grid many times
 }//end groupGrids
 
 /*
@@ -95,12 +133,12 @@ function DynamicCoordGetter(shouldWait){
 	// Change image to 8-bit grayscale to we can set a threshold
 	run("8-bit");
 	// set threshold to only detect the cells
-	// threshold we set is 0-210 as of 5/23/2022 11:18
+	// threshold we set is 0-200 as of 5/23/2022 11:18
 	if(chosenOS == validOSs[0]){
-		setThreshold(0, 210);
+		setThreshold(0, 200);
 	}//end if we're on Windows 10
 	else if(chosenOS == validOSs[1]){
-		setThreshold(0, 210);
+		setThreshold(0, 200);
 	}//end else if we're on Windows 7
 	if(shouldWait){
 		showMessageWithCancel("Action Required",
@@ -113,8 +151,8 @@ function DynamicCoordGetter(shouldWait){
 	"bounding redirect=None decimal=1");
 	// set particle analysis to only detect the cells as particles
 	run("Analyze Particles...", 
-	"size=60-Infinity circularity=0.05-1.00 show=[Overlay Masks] " +
-	"display exclude clear include");
+	"size=60-Infinity circularity=0.05-1.00 show=Nothing " +
+	"exclude clear include add");
 	if(shouldWait){
 		showMessageWithCancel("Action Required",
 		"Scale and Measurements were set, so now " + 
@@ -124,6 +162,7 @@ function DynamicCoordGetter(shouldWait){
 	coordsArray = getCoordinateResults();
 	// open the backup
 	openBackup("coord", true);
+	setOption("Show All", true);
 	return coordsArray;
 }//end DynamicCoordGetter(shouldWait)
 
