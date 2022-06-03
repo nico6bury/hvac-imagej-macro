@@ -41,7 +41,7 @@ validOSs = newArray("Windows 10", "Windows 7");
 // chosen operating system
 chosenOS = validOSs[0];
 // just a debug switch
-debugMessages = false;
+debugMessages = true;
 
 // get a filename of an image with multiple grids.
 multiImg = File.openDialog("Please select an image with multiple grids.");
@@ -148,26 +148,15 @@ function groupGrids(){
 			 	for(j = 0; j < lengthOf(gridCounts); j++){
 			 		// reference to make referring to group number easy
 			 		groupNum = j+1;
-			 		// get information about current roi
-			 		roiBounds = getRoiXBounds();
-			 		// set some boolean variables for easier processing
-			 		insideBoundsBool = false;
-			 		overlapBool = false;
-			 		adjacentBool = false;
 			 		// tolerance for adjacency between edges of roi and group
 			 		adjacencyTol = 6;
-			 		// check if the current roi is inside current group bounds
-			 		if(gridLowBound[j] < roiBounds[0] && gridUpBound[j] > roiBounds[1]){
-			 			insideBoundsBool = true;
-			 		}//end if roi is completely inside of group bounds
-			 		else if( ( (gridLowBound[j] < roiBounds[1]) && (gridUpBound[j] > roiBounds[1]) )
-			 			|| ( (gridUpBound[j] > roiBounds[0]) && (gridLowBound[j] < roiBounds[0]) ) ){
-			 			overlapBool = true;
-			 		}//end else if roi overlaps with group bounds
-			 		else if( (((gridUpBound[j] + adjacencyTol) > roiBounds[0]) && (gridUpBound[j] < roiBounds[0]))
-			 			|| ( ((gridLowBound[j] - adjacencyTol) < roiBounds[1]) && (gridLowBound[j] > roiBounds[1]) ) ){
-			 			adjacentBool = true;
-			 		}//end else if roi is adjacent to group bounds
+			 		// get information about current roi
+			 		roiBounds = getRoiXBounds();
+			 		// find out where the roi stands in relation to this group
+			 		boundBools = locationRelation(gridLowBound[j],gridUpBound[j],adjacencyTol,roiBounds[0],roiBounds[1]);
+			 		insideBoundsBool = boundBools[0];
+			 		overlapBool = boundBools[1];
+			 		adjacentBool = boundBools[2];
 			 		
 			 		// we should now know how to handle the current roi + variable management
 			 		if(insideBoundsBool == true){
@@ -191,14 +180,8 @@ function groupGrids(){
 				 			waitForUser("Roi overlapping with group", sb);
 			 			}//end if we should show debugging messages
 			 			// add roi to current group, changing one of the bounds
-			 			if((gridLowBound[j] < roiBounds[1]) && (gridUpBound[j] > roiBounds[1])){
-			 				// we'll want to update left bounds to cover left of roi
-			 				gridLowBound[j] = Math.min(gridLowBound[j], roiBounds[0]);
-			 			}//end if roi overlaps with left side of group
-			 			if((gridUpBound[j] > roiBounds[0]) && (gridLowBound[j] < roiBounds[0])){
-			 				// we'll want to update right bounds to cover right of roi
-			 				gridUpBound[j] = Math.max(gridUpBound[j], roiBounds[1]);
-			 			}//end if roi overlaps with right side of group
+			 			gridLowBound[j] = Math.min(gridLowBound[j], roiBounds[0]);
+			 			gridUpBound[j] = Math.max(gridUpBound[j], roiBounds[1]);
 			 			// update group number of roi
 			 			Roi.setGroup(groupNum);
 			 		}//end else if roi is overlapping with the bounds
@@ -211,14 +194,8 @@ function groupGrids(){
 				 			waitForUser("Roi is adjacent to a group", sb);
 			 			}//end if we should show debugging messages
 			 			// add roi to current group, expanding bounds to cover roi
-			 			if( ((gridUpBound[j] + adjacencyTol) > roiBounds[0]) && (gridUpBound[j] < roiBounds[0]) ){
-			 				// we'll want to update right bounds to cover right of roi
-			 				gridUpBound[j] = Math.max(gridUpBound[j], roiBounds[1]);
-			 			}//end if roi close to right side of group
-			 			if( ((gridLowBound[j] - adjacencyTol) < roiBounds[1]) && (gridLowBound[j] > roiBounds[1]) ){
-			 				// we'll want to update left bounds to cover left of roi
-			 				gridLowBound[j] = Math.min(gridLowBound[j], roiBounds[0]);
-			 			}//end if roi close to left side of group
+			 			gridUpBound[j] = Math.max(gridUpBound[j], roiBounds[1]);
+			 			gridLowBound[j] = Math.min(gridLowBound[j], roiBounds[0]);
 			 			// update group number of roi
 			 			Roi.setGroup(groupNum);
 			 		}//end else if roi is not overlapping but adjacent
@@ -258,6 +235,35 @@ function groupGrids(){
 		}//end if we need to assign this grid
 	}// end iterating over each cell in the grid many times
 }//end groupGrids
+
+/**
+ * Parameter Explanation
+ * obj1Low : Lower x bound of first object
+ * obj1Up : Upper x bound of first object
+ * adjTol : applied to obj1, closeness required for obj2 to be adjacent
+ * obj2Low : Lower x bound of second object
+ * obj2Up : Upper x bound of second object
+ */
+function locationRelation(obj1Low,obj1Up,adjTol,obj2Low,obj2Up){
+	insideBoundsBool = false;
+	overlapBool = false;
+	adjacencyBool = false;
+	if(obj1Low <= obj2Low && obj1Up >= obj2Up)
+	{insideBoundsBool = true;}
+	if(
+		((obj1Low <= obj2Up) && (obj1Up >= obj2Up))
+		||
+		((obj1Up >= obj2Low) && (obj1Low <= obj2Low))
+	)
+	{overlapBool = true;}
+	if(
+		( ((obj1Up + adjTol) >= obj2Low) && (obj1Up <= obj2Low) )
+		||
+		( ((obj1Low - adjTol) <= obj2Up) && (obj1Low >= obj2Up) )
+	)
+	{adjacencyBool = true;}
+	return newArray(insideBoundsBool, overlapBool, adjacencyBool);
+}//end locationRelation(obj1Low,obj1Up,adjTol,obj2Low,obj2Up)
 
 /*
  * Returns length 2 array with x and (x+width) of currently selected roi
