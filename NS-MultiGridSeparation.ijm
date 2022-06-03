@@ -41,7 +41,7 @@ validOSs = newArray("Windows 10", "Windows 7");
 // chosen operating system
 chosenOS = validOSs[0];
 // just a debug switch
-debugMessages = true;
+debugMessages = false;
 
 // get a filename of an image with multiple grids.
 multiImg = File.openDialog("Please select an image with multiple grids.");
