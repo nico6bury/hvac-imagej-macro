@@ -242,16 +242,17 @@ function groupGrids(){
 			// find out where grids stand in relation to each other
 			boundBools = locationRelation(gridLowBound[i],gridUpBound[i],6,gridLowBound[j],gridUpBound[j]);
 			if(boundBools[0] || boundBools[1]){
-				print("Group " + groupNum + ": " + gridLowBound[i] + ", " + gridUpBound[i]);
-				print("Group " + (j+1) + ": " + gridLowBound[j] + ", " + gridUpBound[j]);
-				waitForUser("locationRelation", String.join(boundBools));
 				// merge groups i and j I guess
+				if(debugMessages){
+					print("Group " + groupNum + ": " + gridLowBound[i] + ", " + gridUpBound[i]);
+					print("Group " + (j+1) + ": " + gridLowBound[j] + ", " + gridUpBound[j]);
+					waitForUser("locationRelation", String.join(boundBools));
+				}//end if we're doing debugging messages
 				// loop over cells, if they're in group j, then set them to group i
 				for(k = 0; k < cellSum; k++){
 					roiManager("select", k);
 					if(Roi.getGroup() == j+1){
 						Roi.setGroup(i+1);
-						print("I work/ got here");
 					}//end if roi in group to be merged
 				}//end looping over all the cells
 				// set bounds of group j to -1,-1, count of -1
