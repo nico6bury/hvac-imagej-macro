@@ -40,6 +40,8 @@
 validOSs = newArray("Windows 10", "Windows 7");
 // chosen operating system
 chosenOS = validOSs[0];
+// just a debug switch
+debugMessages = false;
 
 // get a filename of an image with multiple grids.
 multiImg = File.openDialog("Please select an image with multiple grids.");
@@ -84,10 +86,16 @@ function transformImg(){
 function groupGrids(){
 	// number of cells
 	cellSum = roiManager("count");
-	// parallel arrays of [x lower bound, x upper bound, count]
+	// parallel arrays of [count, x lower bound, x upper bound]
+	/*
+	 * One complication of using imagej is that in order to avoid janky
+	 * multi-dimensional arrays, we might just directly call another function
+	 * at the end of this one in order to avoid scraping the information out
+	 * of an R^n array
+	 */
 	gridCounts = newArray(0);
-	gridLowBound = newArray(0);
-	gridUpBound = newArray(0);
+	gridLowBound = newArray(0); // just uses x
+	gridUpBound = newArray(0); // uses x + width
 	// counter for setting up loop guard
 	numAssigned = 0; // might not be used ¯\_(ツ)_/¯
 	// iterate over each cell in the grid
@@ -117,9 +125,151 @@ function groupGrids(){
 			 * belong to the same group together, as that way we can directly see
 			 * the regions on the image, which will be useful for debugging.
 			 */
+			 // do we have any groups? If no, then make one
+			 if(lengthOf(gridCounts) == 0){
+			 	// debug message
+			 	if(debugMessages){
+			 		waitForUser("First roi","First roi, making new grid.");
+			 	}//end if displaying debugging messages
+			 	// groups are empty, so we can recreate them
+			 	gridCounts = newArray(1);
+			 	gridLowBound = newArray(1);
+				gridUpBound = newArray(1);
+				// get information about current roi
+				roiBounds = getRoiXBounds();
+				// update parallel arrays with new roi
+				gridCounts[0] = 1;
+				gridLowBound[0] = roiBounds[0];
+				gridUpBound[0] = roiBounds[1];
+				// update group number of current roi
+				Roi.setGroup(1);
+			 }//end if we need to make a new group
+			 else{
+			 	for(j = 0; j < lengthOf(gridCounts); j++){
+			 		// reference to make referring to group number easy
+			 		groupNum = j+1;
+			 		// get information about current roi
+			 		roiBounds = getRoiXBounds();
+			 		// set some boolean variables for easier processing
+			 		insideBoundsBool = false;
+			 		overlapBool = false;
+			 		adjacentBool = false;
+			 		// tolerance for adjacency between edges of roi and group
+			 		adjacencyTol = 6;
+			 		// check if the current roi is inside current group bounds
+			 		if(gridLowBound[j] < roiBounds[0] && gridUpBound[j] > roiBounds[1]){
+			 			insideBoundsBool = true;
+			 		}//end if roi is completely inside of group bounds
+			 		else if( ( (gridLowBound[j] < roiBounds[1]) && (gridUpBound[j] > roiBounds[1]) )
+			 			|| ( (gridUpBound[j] > roiBounds[0]) && (gridLowBound[j] < roiBounds[0]) ) ){
+			 			overlapBool = true;
+			 		}//end else if roi overlaps with group bounds
+			 		else if( (((gridUpBound[j] + adjacencyTol) > roiBounds[0]) && (gridUpBound[j] < roiBounds[0]))
+			 			|| ( ((gridLowBound[j] - adjacencyTol) < roiBounds[1]) && (gridLowBound[j] > roiBounds[1]) ) ){
+			 			adjacentBool = true;
+			 		}//end else if roi is adjacent to group bounds
+			 		
+			 		// we should now know how to handle the current roi + variable management
+			 		if(insideBoundsBool == true){
+			 			// debugging functions
+			 			if(debugMessages == true){
+				 			sb = "roi " + (i+1) + " bounds " + roiBounds[0] + ", " +
+				 			roiBounds[1] + " within with group bounds " +
+				 			gridLowBound[j] + ", " + gridUpBound[j];
+				 			waitForUser("Roi Inside of group bounds", sb);
+			 			}//end if we should show debugging messages
+			 			// add roi to current group without changing bounds
+			 			gridCounts[j]++;
+			 			Roi.setGroup(groupNum);
+			 		}//end if the roi is fully within the bounds
+			 		else if(overlapBool == true){
+			 			// debugging functions
+			 			if(debugMessages == true){
+				 			sb = "roi " + (i+1) + " bounds " + roiBounds[0] + ", " +
+				 			roiBounds[1] + " overlaps with group bounds " +
+				 			gridLowBound[j] + ", " + gridUpBound[j];
+				 			waitForUser("Roi overlapping with group", sb);
+			 			}//end if we should show debugging messages
+			 			// add roi to current group, changing one of the bounds
+			 			if((gridLowBound[j] < roiBounds[1]) && (gridUpBound[j] > roiBounds[1])){
+			 				// we'll want to update left bounds to cover left of roi
+			 				gridLowBound[j] = Math.min(gridLowBound[j], roiBounds[0]);
+			 			}//end if roi overlaps with left side of group
+			 			if((gridUpBound[j] > roiBounds[0]) && (gridLowBound[j] < roiBounds[0])){
+			 				// we'll want to update right bounds to cover right of roi
+			 				gridUpBound[j] = Math.max(gridUpBound[j], roiBounds[1]);
+			 			}//end if roi overlaps with right side of group
+			 			// update group number of roi
+			 			Roi.setGroup(groupNum);
+			 		}//end else if roi is overlapping with the bounds
+			 		else if(adjacentBool == true){
+			 			// debugging functions
+			 			if(debugMessages == true){
+				 			sb = "roi " + (i+1) + " bounds " + roiBounds[0] + ", " +
+				 			roiBounds[1] + " is adjacent to group bounds " +
+				 			gridLowBound[j] + ", " + gridUpBound[j];
+				 			waitForUser("Roi is adjacent to a group", sb);
+			 			}//end if we should show debugging messages
+			 			// add roi to current group, expanding bounds to cover roi
+			 			if( ((gridUpBound[j] + adjacencyTol) > roiBounds[0]) && (gridUpBound[j] < roiBounds[0]) ){
+			 				// we'll want to update right bounds to cover right of roi
+			 				gridUpBound[j] = Math.max(gridUpBound[j], roiBounds[1]);
+			 			}//end if roi close to right side of group
+			 			if( ((gridLowBound[j] - adjacencyTol) < roiBounds[1]) && (gridLowBound[j] > roiBounds[1]) ){
+			 				// we'll want to update left bounds to cover left of roi
+			 				gridLowBound[j] = Math.min(gridLowBound[j], roiBounds[0]);
+			 			}//end if roi close to left side of group
+			 			// update group number of roi
+			 			Roi.setGroup(groupNum);
+			 		}//end else if roi is not overlapping but adjacent
+			 		
+			 		if(insideBoundsBool || overlapBool || adjacentBool){
+			 			continue;
+			 		}//end if we have found a group for this roi already
+			 		
+			 		// if roi doesn't fit in this group, it might fit in next group
+			 	}//end looping over the groups that we have
+			 	if(Roi.getGroup() == 0){
+			 		// debug messages
+			 		if(debugMessages){
+			 			sb = "Roi " + (i+1) + " bounds " + roiBounds[0] + ", " +
+				 		roiBounds[1] + " must be put in a new group\n";
+				 		// add coordinates of current groups
+				 		sb += "Current group coordinates added to log.";
+				 		print("\\Clear");
+				 		print("Adding bounds of current groups.");
+				 		for(k = 0; k < lengthOf(gridCounts); k++){
+				 			print("Group " + (k+1) + " has bounds " + gridLowBound[k] + ", " + gridUpBound[k]);
+				 		}//end looping over each group
+				 		waitForUser("No group found, must put roi in new group",sb);
+			 		}//end if displaying debugging messages
+			 		// we'll need to add current roi to its own group
+			 		// grap some information needed for updating things
+			 		roiBounds = getRoiXBounds();
+			 		// our parallel arrays have stuff in them, so we need to append
+			 		// concattenation will also update arrays with new values
+			 		gridCounts = Array.concat(gridCounts,1);
+			 		gridLowBound = Array.concat(gridLowBound,roiBounds[0]);
+			 		gridUpBound = Array.concat(gridUpBound,roiBounds[1]);
+			 		// update group number of current roi
+			 		Roi.setGroup(lengthOf(gridCounts));
+			 	}//end if group still hasn't been assigned to roi
+			 }//end else we need to cycle through groups in order to check bounds
 		}//end if we need to assign this grid
 	}// end iterating over each cell in the grid many times
 }//end groupGrids
+
+/*
+ * Returns length 2 array with x and (x+width) of currently selected roi
+ * tries to automatically convert things to mm by dividing by 11.5
+ */
+function getRoiXBounds(){
+	roiX = -1;
+	roiWidth = -1;
+	temp = -1;
+	Roi.getBounds(roiX, temp, roiWidth, temp);
+	return newArray(roiX / 11.5, (roiX + roiWidth) / 11.5);
+}//end getRoiXBounds
 
 /*
  * Parameter Explanation: shouldWait specifies whether or
