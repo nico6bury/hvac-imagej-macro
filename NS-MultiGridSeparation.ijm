@@ -43,6 +43,7 @@ chosenOS = validOSs[0];
 // just a debug switch
 debugMessages = false;
 
+
 // get a filename of an image with multiple grids.
 multiImg = File.openDialog("Please select an image with multiple grids.");
 // open up the image
@@ -93,11 +94,9 @@ function groupGrids(){
 	 * at the end of this one in order to avoid scraping the information out
 	 * of an R^n array
 	 */
-	gridCounts = newArray(0);
+	gridCounts = newArray(0); // kinda doesn't get used ¯\_(ツ)_/¯
 	gridLowBound = newArray(0); // just uses x
 	gridUpBound = newArray(0); // uses x + width
-	// counter for setting up loop guard
-	numAssigned = 0; // might not be used ¯\_(ツ)_/¯
 	// iterate over each cell in the grid
 	for(i = 0; i < cellSum; i++){
 		// only proceed if the current grid hasn't been assigned
@@ -234,6 +233,34 @@ function groupGrids(){
 			 }//end else we need to cycle through groups in order to check bounds
 		}//end if we need to assign this grid
 	}// end iterating over each cell in the grid many times
+	
+	// now that we've assigned our groups, we'll need to find out if any need to be merged
+	for(i = 0; i < lengthOf(gridCounts); i++){
+		groupNum = i+1;
+		// see if another group is close to this one
+		for(j = i+1; j < lengthOf(gridCounts); j++){
+			// find out where grids stand in relation to each other
+			boundBools = locationRelation(gridLowBound[i],gridUpBound[i],6,gridLowBound[j],gridUpBound[j]);
+			if(boundBools[0] || boundBools[1]){
+				print("Group " + groupNum + ": " + gridLowBound[i] + ", " + gridUpBound[i]);
+				print("Group " + (j+1) + ": " + gridLowBound[j] + ", " + gridUpBound[j]);
+				waitForUser("locationRelation", String.join(boundBools));
+				// merge groups i and j I guess
+				// loop over cells, if they're in group j, then set them to group i
+				for(k = 0; k < cellSum; k++){
+					roiManager("select", k);
+					if(Roi.getGroup() == j+1){
+						Roi.setGroup(i+1);
+						print("I work/ got here");
+					}//end if roi in group to be merged
+				}//end looping over all the cells
+				// set bounds of group j to -1,-1, count of -1
+				gridCounts[j] = -1;
+				gridLowBound[j] = -1;
+				gridUpBound[j] = -1;
+			}//end if groups should be merged
+		}//end looping over over groups for group
+	}//end looping over the groups
 }//end groupGrids
 
 /**
@@ -252,13 +279,13 @@ function locationRelation(obj1Low,obj1Up,adjTol,obj2Low,obj2Up){
 	{insideBoundsBool = true;}
 	if(
 		((obj1Low <= obj2Up) && (obj1Up >= obj2Up))
-		||
+							 ||
 		((obj1Up >= obj2Low) && (obj1Low <= obj2Low))
 	)
 	{overlapBool = true;}
 	if(
 		( ((obj1Up + adjTol) >= obj2Low) && (obj1Up <= obj2Low) )
-		||
+										 ||
 		( ((obj1Low - adjTol) <= obj2Up) && (obj1Low >= obj2Up) )
 	)
 	{adjacencyBool = true;}
