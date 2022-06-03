@@ -844,3 +844,5 @@ function threeDArraySwap(array,yT,zT,x1,y1,x2,y2){
 
 waitForUser("End of macro", "When this message box is closed, the macro will terminate.");
 run("Close All");
+roiManager("reset");
+if(isOpen("ROI Manager")){selectWindow("ROI Manager"); run("Close");}
