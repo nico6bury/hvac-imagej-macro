@@ -46,26 +46,50 @@ debugMessages = false;
 
 // get a filename of an image with multiple grids.
 multiImg = File.openDialog("Please select an image with multiple grids.");
-// open up the image
-open(multiImg);
 
-//// STEP 1: TRANSFORM the image to what we expect based on what we expect
-transformImg();
 
-//// STEP 2: Find a bunch of CELL STRIPS in the grid
-// adds all the cells we could find to the roi manager
-DynamicCoordGetter(debugMessages);
 
-//// STEP 3: GROUP the strips together by the grid they appear to belong to
-// uses the rois in the roi manager
-serializedGroups = groupGrids();
-// deserialize the bounds
-numberOfGrids = lengthOf(serializedGroups);
+// add files to an array we'll reference later
+imgToPrc = newArray(1);
+imgToPrc[0] = multiImg;
 
-//// STEP 4: Create DUPLICATE images from the supposed BOUNDS of each grid
-separateGrids(serializedGroups);
+// loop over all the images to process
+for(i = 0; i < lengthOf(imgToPrc); i++){
+	// open up the image
+	open(imgToPrc[i]);
+	
+	//// STEP 1: TRANSFORM the image to what we expect based on what we expect
+	transformImg();
+	
+	//// STEP 2: Find a bunch of CELL STRIPS in the grid
+	// adds all the cells we could find to the roi manager
+	DynamicCoordGetter(debugMessages);
+	
+	//// STEP 3: GROUP the strips together by the grid they appear to belong to
+	// uses the rois in the roi manager
+	serializedGroups = groupGrids();
+	// deserialize the bounds
+	numberOfGrids = lengthOf(serializedGroups);
+	
+	//// STEP 4: Create DUPLICATE images from the supposed BOUNDS of each grid
+	imgKeys = separateGrids(serializedGroups);
+	
+	//// STEP 5: EXPORT each image to where it needs to go
+	// loop over each image we want to open
+	for(j = 0; j < lengthOf(imgKeys); j++){
+		// open the current image
+		openBackup(imgKeys[j], false);
+		
+		// TODO: Put the image somewhere
+		waitForUser;
+		
+		// close the current image
+		close();
+	}//end looping over separated images
+	
+}//end looping over all the images to process
 
-//// STEP 5: EXPORT each image to where it needs to go
+
 
 
 ////////////////////////////////////////////////////////////////
@@ -128,14 +152,11 @@ function separateGrids(groupBounds){
 		close();
 	}//end looping over each group
 	
-	// now that we've gotten our images, open them instead of original
+	// now that we've gotten our images, close the original
 	close("*");
 	roiManager("reset");
 	if(isOpen("ROI Manager")){selectWindow("ROI Manager"); run("Close");}
-	// open all the images back up
-	for(i = 0; i < lengthOf(imageKeys); i++){
-		openBackup(imageKeys[i], false);
-	}//end opening all the duplicated images
+	return imageKeys;
 }//end separateGrids(groupBounds)
 
 /**
