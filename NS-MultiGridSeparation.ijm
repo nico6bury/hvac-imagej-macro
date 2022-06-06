@@ -58,10 +58,12 @@ DynamicCoordGetter(debugMessages);
 
 //// STEP 3: GROUP the strips together by the grid they appear to belong to
 // uses the rois in the roi manager
-groupGrids();
+serializedGroups = groupGrids();
+// deserialize the bounds
+numberOfGrids = lengthOf(serializedGroups);
 
 //// STEP 4: Create DUPLICATE images from the supposed BOUNDS of each grid
-
+separateGrids(serializedGroups);
 
 //// STEP 5: EXPORT each image to where it needs to go
 
@@ -80,9 +82,77 @@ function transformImg(){
 }// end transformImg()
 
 /**
- * Groups the cell strips together based on probably grid location
- * helper functions:
- * isAdjacent(i, j)
+ * Separates the grids by creating a separate image for each grid,
+ * based on the bounds of the groups. Does a little deserialization.
+ */
+function separateGrids(groupBounds){
+	// Value for how thick we think the grid is, added to group bounds
+	gridThickness = 4 * 11.5;
+	// get the dimensions of overall image
+	dims = imgDimensions();
+	// get title of current image
+	overallTitle = getTitle();
+	// list of snapshot keys for the images
+	imageKeys = newArray(lengthOf(groupBounds));
+	// create an image for each grid
+	for(i = 0; i < lengthOf(groupBounds); i++){
+		// deserialize the bounds of this group
+		bounds = split(groupBounds[i], ":");
+		// prevent us from processing invalid input
+		if(lengthOf(bounds) <= 0){
+			waitForUser("Something wrong with bounds", groupBounds[i]);
+			continue;
+		}//end if something went wrong
+		// get x and width for group
+		imgX = parseFloat(bounds[0]) * 11.5;
+		imgW = (parseFloat(bounds[1]) * 11.5) - (parseFloat(bounds[0]) * 11.5);
+		// compensate for thickness
+		imgX -= gridThickness;
+		imgW += (2 * gridThickness);
+		// get y and height for group
+		imgY = 0;
+		imgH = dims[1];
+		// make sure we aren't out of bounds
+		imgX = Math.max(imgX, 0);
+		imgX = Math.min(imgX, dims[0]);
+		imgW = Math.max(imgW, 0);
+		imgW = Math.min(imgW, dims[0]);
+		// create the selection
+		makeRectangle(imgX, imgY, imgW, imgH);
+		// duplicate and save selection
+		imgKey = "dup" + i;
+		imageKeys[i] = imgKey;
+		run("Duplicate...", imgKey);
+		makeBackup(imgKey);
+		// close the duplicated image (should be on top)
+		close();
+	}//end looping over each group
+	
+	// now that we've gotten our images, open them instead of original
+	close("*");
+	roiManager("reset");
+	if(isOpen("ROI Manager")){selectWindow("ROI Manager"); run("Close");}
+	// open all the images back up
+	for(i = 0; i < lengthOf(imageKeys); i++){
+		openBackup(imageKeys[i], false);
+	}//end opening all the duplicated images
+}//end separateGrids(groupBounds)
+
+/**
+ * Returns array with elements:
+ * [0] : width
+ * [1] : height
+ */
+function imgDimensions(){
+	tempWidth = -1;
+	tempHeight = -1;
+	temp = -2;
+	getDimensions(tempWidth, tempHeight, temp, temp, temp);
+	return newArray(tempWidth, tempHeight);
+}//end imgDimensions()
+
+/**
+ * Groups the cell strips together based on x-location
  */
 function groupGrids(){
 	// number of cells
@@ -103,34 +173,12 @@ function groupGrids(){
 		roiManager("select", i);
 		if(Roi.getGroup() == 0){
 			// figure out a group to assign it to based off of x-position
-			/*
-			 * Okay, so figuring out which group to assign the cell will
-			 * be sorta difficult. If we don't have any groups, then we
-			 * should create a new group by adding our current one to
-			 * that new group. Otherwise, if we want to assign the roi
-			 * to a new group, we should cycle through the current groups.
-			 * If we find a group that the roi ether fits inside of or is
-			 * very close to, then we should put this roi there. Otherwise,
-			 * if it doesn't fit into any group, then we should probably
-			 * yeet the grid into a new group. Now, there is an immediate
-			 * problem with this method. If a group has very few roi in it
-			 * when we check it, it's possible that our roi would eventually
-			 * fit into the group, but it just doesn't fit yet. In that case,
-			 * we're almost guarenteed that for a lot of images, we'll end up
-			 * with overlapping groups. This is kinda a problem. As a result,
-			 * we'll need to have a separate function with the purpose of
-			 * merging groups that overlap. It would also be good to have some
-			 * sort of debug function which allows you to flatten the rois which
-			 * belong to the same group together, as that way we can directly see
-			 * the regions on the image, which will be useful for debugging.
-			 */
-			 // do we have any groups? If no, then make one
 			 if(lengthOf(gridCounts) == 0){
 			 	// debug message
 			 	if(debugMessages){
 			 		waitForUser("First roi","First roi, making new grid.");
 			 	}//end if displaying debugging messages
-			 	// groups are empty, so we can recreate them
+			 	// groups are empty, so we can recreate arrays
 			 	gridCounts = newArray(1);
 			 	gridLowBound = newArray(1);
 				gridUpBound = newArray(1);
@@ -262,6 +310,19 @@ function groupGrids(){
 			}//end if groups should be merged
 		}//end looping over over groups for group
 	}//end looping over the groups
+	
+	// create a sorted array of serialized bound information for each group
+	serializedGroups = newArray(0);
+	rankedGroups = Array.rankPositions(gridLowBound);
+	for(i = 0; i < lengthOf(gridCounts); i++){
+		j = rankedGroups[i];
+		if(gridCounts[j] != -1){
+			// add upper and lower bound to buffer
+			thisGroup = String.join(newArray(gridLowBound[j], gridUpBound[j]), ":");
+			serializedGroups = Array.concat(serializedGroups,thisGroup);
+		}//end if this group has rois
+	}//end looping over the groups
+	return serializedGroups;
 }//end groupGrids
 
 /**
@@ -489,5 +550,6 @@ function threeDArraySwap(array,yT,zT,x1,y1,x2,y2){
 
 waitForUser("End of macro", "When this message box is closed, the macro will terminate.");
 run("Close All");
+if(isOpen("Log")){selectWindow("Log"); run("Close");}
 roiManager("reset");
 if(isOpen("ROI Manager")){selectWindow("ROI Manager"); run("Close");}
