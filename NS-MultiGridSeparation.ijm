@@ -42,7 +42,36 @@ validOSs = newArray("Windows 10", "Windows 7");
 chosenOS = validOSs[0];
 // just a debug switch
 debugMessages = false;
+// whether or not we'll use batch mode, which really speeds things up
+useBatchMode = false;
+// all the valid selection methods we might use
+selectionMethods = newArray("Single File", "Multiple Files", "Directory");
+// the selection method we're actually going with
+selectionMethod = selectionMethods[2];
 
+// whether or not we should output separated images to a new subdirectory
+outputNewDirectory = true;
+// the filetypes that are allowed in directory selection
+allowedFiletypes = newArray(".tif");
+// files whose path contains one of these will be ignored by directory selection
+forbiddenStrings = newArray("-Fx","-fA2","-F","-Skip");
+
+showDialog();
+
+// read new values from dialog box
+// first line
+selectionMethod = Dialog.getChoice();
+chosenOS = Dialog.getChoice();
+// second line
+useBatchMode = Dialog.getCheckbox();
+debugMessages = Dialog.getCheckbox();
+// third line
+outputNewDirectory = Dialog.getCheckbox();
+// fourth and fifth lines
+allowedFiletypes = split(Dialog.getString(), ",");
+forbiddenStrings = split(Dialog.getString(), ",");
+
+saveDialogConfig();
 
 // get a filename of an image with multiple grids.
 multiImg = File.openDialog("Please select an image with multiple grids.");
@@ -96,6 +125,114 @@ for(i = 0; i < lengthOf(imgToPrc); i++){
 ////////////////////// END OF MAIN PROGRAM /////////////////////
 ////////////////// BEGINNING OF FUNCTION LIST //////////////////
 ////////////////////////////////////////////////////////////////
+
+/*
+ * Reads prior configuration from file, creates dialog, updates variables
+ */
+function showDialog(){
+	// read all the junk from the config file
+	serializationPath = serializationDirectory();
+	// a temporary variable required because of ImageJ's syntactic bitterness
+	temp = "\0";
+	if(File.exists(serializationPath)){
+		// get each line from the file
+		lines = split(File.openAsString(serializationPath), "\n");
+		for(i = 0; i < lengthOf(lines); i++){
+			currentLine = lines[i];
+			if(lengthOf(currentLine) >= 18){
+				if(substring(currentLine, 0, 18) == "outputNewDirectory"){
+					temp = split(currentLine, "=");
+					temp = temp[1];
+					outputNewDirectory = parseInt(temp);
+				}//end if this line has the outputNewDirectory information
+			}//end if 
+			if(lengthOf(currentLine) >= 16){
+				if(substring(currentLine, 0, 16) == "allowedFiletypes"){
+					listing = substring(currentLine, 18, lengthOf(currentLine)-1);
+					allowedFiletypes = split(listing, "|");
+				}//end if this line has the allowed file types information
+				else if(substring(currentLine, 0, 16) == "forbiddenStrings"){
+					listing = substring(currentLine, 18, lengthOf(currentLine) - 1);
+					forbiddenStrings = split(listing, "|");
+				}//end if this line has the forbidden strings information
+			}//end if
+			if(lengthOf(currentLine) >= 15){
+				if(substring(currentLine, 0, 15) == "selectionMethod"){
+					temp = split(currentLine, "=");
+					selectionMethod = temp[1];
+				}//end if this line has the selection method information
+			}//end if 
+			if(lengthOf(currentLine) >= 13){
+				if(substring(currentLine, 0, 13) == "debugMessages"){
+					temp = split(currentLine, "=");
+					temp = temp[1];
+					debugMessages = parseInt(temp);
+				}//end if this line has the debugging message information
+			}//end if 
+			if(lengthOf(currentLine) >= 12){
+				if(substring(currentLine, 0, 12) == "useBatchMode"){
+					temp = split(currentLine, "=");
+					temp = temp[1];
+					useBatchMode = parseInt(temp);
+				}//end if this line has the useBatchMode information
+			}//end if 
+			if(lengthOf(currentLine) >= 8){
+				if(substring(currentLine, 0, 8) == "chosenOS"){
+					temp = split(currentLine, "=");
+					chosenOS = temp[1];
+				}//end if this line has the chosen operating system information
+			}//end if 
+		}//end looping over each line of the file
+	}//end if the config file exists
+	
+	// actually build the dialog now
+	Dialog.create("Multi-Grid-Separation Macro Options");
+	// first line
+	Dialog.addChoice("Selection Method", selectionMethods, selectionMethod);
+	Dialog.addToSameRow();
+	Dialog.addChoice("Operating System", validOSs, chosenOS);
+	// second line
+	Dialog.addCheckbox("Batch Mode", useBatchMode);
+	Dialog.addToSameRow();
+	Dialog.addCheckbox("Debugging Messages", debugMessages);
+	// third line
+	Dialog.addCheckbox("Output new Directory", outputNewDirectory);
+	// fourth + fifth line
+	Dialog.addMessage("The following options are used when selecting files in Directory Selection Mode.");
+	Dialog.addString("Allowed Filetypes", String.join(allowedFiletypes, ","), 30);
+	Dialog.addString("Forbidden Strings", String.join(forbiddenStrings, ","), 30);
+	// actually make the window show up
+	Dialog.show();
+}//end showDialog()
+
+/*
+ * Saves the settings read from the dialog in a configuration file
+ */
+function saveDialogConfig(){
+	serializationPath = serializationDirectory();
+	fileVar = File.open(serializationPath);
+	// write all the important variables to the file
+	print(fileVar, String.join(newArray("chosenOS", chosenOS), "="));
+	print(fileVar, String.join(newArray("debugMessages", debugMessages), "="));
+	print(fileVar, String.join(newArray("useBatchMode", useBatchMode), "="));
+	print(fileVar, String.join(newArray("selectionMethod", selectionMethod), "="));
+	print(fileVar, String.join(newArray("outputNewDirectory", outputNewDirectory), "="));
+	// now for the annoying ones
+	allowedFileTypesStr = String.join(allowedFiletypes, "|");
+	print(fileVar, String.join(newArray("allowedFiletypes", "[" + allowedFileTypesStr + "]"), "="));
+	forbiddenStringsStr = String.join(forbiddenStrings, "|");
+	print(fileVar, String.join(newArray("forbiddenStrings", "[" + forbiddenStringsStr + "]"), "="));
+}//end saveDialogConfig()
+
+function serializationDirectory(){
+	// generates a directory for serialization
+	macrDir = getDirectory("macros");
+	macrDir += "Macro-Configuration/";
+	File.makeDirectory(macrDir);
+	macrDir += "MultiGridSeparationConfig.txt";
+	return macrDir;
+}//end serializationDirectory()
+
 /*
  * Transforms the current image in order to make the grids look
  * vertical + the right orientation (flipped horizontally)
