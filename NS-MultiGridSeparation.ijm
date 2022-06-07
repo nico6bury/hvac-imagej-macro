@@ -47,7 +47,7 @@ useBatchMode = false;
 // all the valid selection methods we might use
 selectionMethods = newArray("Single File", "Multiple Files", "Directory", "Multiple Directories");
 // the selection method we're actually going with
-selectionMethod = selectionMethods[2];
+selectionMethod = selectionMethods[0];
 
 // whether or not we should output separated images to a new subdirectory
 outputNewDirectory = true; // TODO: Actually implement this feature
@@ -86,8 +86,8 @@ for(i = 0; i < lengthOf(imgToPrc); i++){
 	// open up the image
 	open(imgToPrc[i]);
 	
-	//// STEP 1: TRANSFORM the image to what we expect based on what we expect
-	transformImg();
+	//// STEP 1: TRANSFORM (flip and rotate) the image to what we expect
+	nsTransformImg();
 	
 	//// STEP 2: Find a bunch of CELL STRIPS in the grid
 	// adds all the cells we could find to the roi manager
@@ -108,12 +108,12 @@ for(i = 0; i < lengthOf(imgToPrc); i++){
 		// open the current image
 		openBackup(imgKeys[j], false);
 		
-		// TODO: Put the image somewhere
+		// save the image of one grid somewhere near the original
+		exportImage(imgToPrc[i]);
 		
 		// close the current image
 		close();
 	}//end looping over separated images
-	
 }//end looping over all the images to process
 
 // exit batch mode if we were in it
@@ -126,6 +126,11 @@ if(is("Batch Mode")){
 ////////////////////// END OF MAIN PROGRAM /////////////////////
 ////////////////// BEGINNING OF FUNCTION LIST //////////////////
 ////////////////////////////////////////////////////////////////
+
+function exportImage(originalFile){
+	// tries to export part of a multi-grid image
+	
+}//end exportImage
 
 /*
  * Reads prior configuration from file, creates dialog, updates variables
@@ -238,10 +243,10 @@ function serializationDirectory(){
  * Transforms the current image in order to make the grids look
  * vertical + the right orientation (flipped horizontally)
  */
-function transformImg(){
+function nsTransformImg(){
 	run("Flip Horizontally");
 	run("Rotate 90 Degrees Right");
-}// end transformImg()
+}// end nsTransformImg()
 
 /**
  * Separates the grids by creating a separate image for each grid,
@@ -359,7 +364,8 @@ function groupGrids(){
 			 		// get information about current roi
 			 		roiBounds = getRoiXBounds();
 			 		// find out where the roi stands in relation to this group
-			 		boundBools = locationRelation(gridLowBound[j],gridUpBound[j],adjacencyTol,roiBounds[0],roiBounds[1]);
+			 		boundBools = locationRelation(
+			 			gridLowBound[j],gridUpBound[j],adjacencyTol,roiBounds[0],roiBounds[1]);
 			 		insideBoundsBool = boundBools[0];
 			 		overlapBool = boundBools[1];
 			 		adjacentBool = boundBools[2];
@@ -422,7 +428,8 @@ function groupGrids(){
 				 		print("\\Clear");
 				 		print("Adding bounds of current groups.");
 				 		for(k = 0; k < lengthOf(gridCounts); k++){
-				 			print("Group " + (k+1) + " has bounds " + gridLowBound[k] + ", " + gridUpBound[k]);
+				 			print("Group " + (k+1) + " has bounds " +
+				 			gridLowBound[k] + ", " + gridUpBound[k]);
 				 		}//end looping over each group
 				 		waitForUser("No group found, must put roi in new group",sb);
 			 		}//end if displaying debugging messages
@@ -447,7 +454,8 @@ function groupGrids(){
 		// see if another group is close to this one
 		for(j = i+1; j < lengthOf(gridCounts); j++){
 			// find out where grids stand in relation to each other
-			boundBools = locationRelation(gridLowBound[i],gridUpBound[i],6,gridLowBound[j],gridUpBound[j]);
+			boundBools = locationRelation(gridLowBound[i],
+			gridUpBound[i],6,gridLowBound[j],gridUpBound[j]);
 			if(boundBools[0] || boundBools[1]){
 				// merge groups i and j I guess
 				if(debugMessages){

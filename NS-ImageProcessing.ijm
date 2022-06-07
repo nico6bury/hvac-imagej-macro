@@ -981,11 +981,11 @@ function deleteDuplicates(d2Array, xT, yT){
 				diffY = abs(d2y - twoDArrayGet(d2Array, xT, yT, j, 1));
 				if(diffX < xTol && diffY < yTol){
 					/*print(twoDArrayGet(d2Array, xT, yT, j, 0));
-					print(twoDArrayGet(d2Array, xT, yT, j, 1));
-					print(twoDArrayGet(d2Array, xT, yT, j, 2));
-					print(twoDArrayGet(d2Array, xT, yT, j, 3));
-					waitForUser("diffX:" + diffX + " diffY:" + diffY +
-					"\nx:" + d2x + " y:" + d2y);*/
+					  print(twoDArrayGet(d2Array, xT, yT, j, 1));
+					  print(twoDArrayGet(d2Array, xT, yT, j, 2));
+					  print(twoDArrayGet(d2Array, xT, yT, j, 3));
+					  waitForUser("diffX:" + diffX + " diffY:" + diffY +
+					  "\nx:" + d2x + " y:" + d2y);*/
 					badInd = Array.concat(badInd,j);
 				}//end if this is VERY close to d2Array[i]
 			}//end looping all the rest of the array
