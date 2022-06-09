@@ -172,22 +172,26 @@ function showDialog(){
 					temp = split(currentLine, "=");
 					temp = temp[1];
 					outputNewDirectory = parseInt(temp);
+					continue;
 				}//end if this line has the outputNewDirectory information
 			}//end if 
 			if(lengthOf(currentLine) >= 16){
 				if(substring(currentLine, 0, 16) == "allowedFiletypes"){
 					listing = substring(currentLine, 18, lengthOf(currentLine)-1);
 					allowedFiletypes = split(listing, "|");
+					continue;
 				}//end if this line has the allowed file types information
 				else if(substring(currentLine, 0, 16) == "forbiddenStrings"){
 					listing = substring(currentLine, 18, lengthOf(currentLine) - 1);
 					forbiddenStrings = split(listing, "|");
+					continue;
 				}//end if this line has the forbidden strings information
 			}//end if
 			if(lengthOf(currentLine) >= 15){
 				if(substring(currentLine, 0, 15) == "selectionMethod"){
 					temp = split(currentLine, "=");
 					selectionMethod = temp[1];
+					continue;
 				}//end if this line has the selection method information
 			}//end if 
 			if(lengthOf(currentLine) >= 13){
@@ -195,6 +199,7 @@ function showDialog(){
 					temp = split(currentLine, "=");
 					temp = temp[1];
 					debugMessages = parseInt(temp);
+					continue;
 				}//end if this line has the debugging message information
 			}//end if 
 			if(lengthOf(currentLine) >= 12){
@@ -202,12 +207,14 @@ function showDialog(){
 					temp = split(currentLine, "=");
 					temp = temp[1];
 					useBatchMode = parseInt(temp);
+					continue;
 				}//end if this line has the useBatchMode information
 			}//end if 
 			if(lengthOf(currentLine) >= 8){
 				if(substring(currentLine, 0, 8) == "chosenOS"){
 					temp = split(currentLine, "=");
 					chosenOS = temp[1];
+					continue;
 				}//end if this line has the chosen operating system information
 			}//end if 
 		}//end looping over each line of the file
