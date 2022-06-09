@@ -109,7 +109,7 @@ for(i = 0; i < lengthOf(imgToPrc); i++){
 		openBackup(imgKeys[j], false);
 		
 		// save the image of one grid somewhere near the original
-		exportImage(imgToPrc[i]);
+		exportImage(imgToPrc[i], "g" + (j+1));
 		
 		// close the current image
 		close();
@@ -127,9 +127,31 @@ if(is("Batch Mode")){
 ////////////////// BEGINNING OF FUNCTION LIST //////////////////
 ////////////////////////////////////////////////////////////////
 
-function exportImage(originalFile){
+function exportImage(originalFile, imageSuffix){
 	// tries to export part of a multi-grid image
+	// the image we want to export should be already open
 	
+	// get the original filepath of the image, minus file name and extension
+	baseDir = substring(originalFile, 0, lastIndexOf(originalFile, File.separator) + 1);
+	originalName = substring(originalFile, lastIndexOf(originalFile,
+		File.separator), lastIndexOf(originalFile, "."));
+	
+	// figure out the location to put the image
+	if(outputNewDirectory == true){
+		// create folder name with original image name + suffix of separated
+		newDirName = originalName + " separated";
+		// add to end of baseDir and create new directory
+		newDir = baseDir + newDirName + File.separator;
+		File.makeDirectory(newDir);
+		// change baseDir to newDir so that image gets added to it
+		baseDir = newDir;
+	}//end if we need to create new directory and append to path
+	
+	// add an appropriate suffix to the image name
+	imagePath = baseDir + originalName + "-" + imageSuffix + ".tif";
+	
+	// once we have a directory, save the image there
+	save(imagePath);
 }//end exportImage
 
 /*
