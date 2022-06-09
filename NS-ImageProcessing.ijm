@@ -897,13 +897,13 @@ function deleteCorners(d2Array, xT, yT){ // TODO: Overhall and fix deleteCorner
 	 returns new array. This function is meant to work on an array of cell
 	 coords, not an array of seed coords.*/
 	 // tolerance for left x
-	 xTolL = 10;
+	 xTolL = 3;
 	 // tolerance for right x
-	 xTolR = 10;
+	 xTolR = 3;
 	 // tolerance for top y
-	 yTolUp = 10;
+	 yTolUp = 3;
 	 // tolerance for bottom y
-	 yTolBot = 10;
+	 yTolBot = 3;
 	 // find borders of image
 	 imgWidth = 0;
 	 imgHeight = 0;
