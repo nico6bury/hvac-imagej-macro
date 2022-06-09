@@ -50,7 +50,7 @@ selectionMethods = newArray("Single File", "Multiple Files", "Directory", "Multi
 selectionMethod = selectionMethods[0];
 
 // whether or not we should output separated images to a new subdirectory
-outputNewDirectory = true; // TODO: Actually implement this feature
+outputNewDirectory = true;
 // the filetypes that are allowed in directory selection
 allowedFiletypes = newArray(".tif");
 // files whose path contains one of these will be ignored by directory selection
