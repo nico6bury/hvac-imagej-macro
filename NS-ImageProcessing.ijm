@@ -261,18 +261,17 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 		Roi.setGroup(3);
 	}//end changing group of each cell coordinate to 3
 	// delete corners
-	//rawCoordResults2 = deleteCorners(rawCoordResults, rawCoordResultsRowCount, rawCoordResultsColCount);
 	deleteCorners();
-	// update raw coordinate results array
+	/* update raw coordinate results array
 	rawCoordResults = rawCoordResults2;
-	rawCoordResultsRowCount = lengthOf(rawCoordResults) / rawCoordResultsColCount;
+	rawCoordResultsRowCount = lengthOf(rawCoordResults) / rawCoordResultsColCount;*/
 	// displays options explanation
 	if(shouldWaitForUserRaw){
 		showMessageWithCancel("Action Required",
-		"The raw coordinates array has been saved from the results window.");
+		"The raw coordinates rois have been saved from the results window.");
 	}//end if we should wait for the user
 	// save things to where they need to go
-	if(shouldOutputRawCoords == true){
+	if(shouldOutputRawCoords == true && false){// TODO: Fix this to use ROI saving
 		if(shouldWaitForUserRaw){
 			showMessageWithCancel("Action Required",
 			"We will now save the raw coords file.");
@@ -949,59 +948,44 @@ function deleteCorners(d2Array, xT, yT){
 	 // just delete the non-corners
 	 roiManager("select", badInd);
 	 roiManager("delete");
-}//end deleteCorners(d2Array, xT, yT)
+}//end deleteCorners()
 
-function deleteDuplicates(d2Array, xT, yT){ // TODO: Overhall deleteDuplicates
+function deleteDuplicates(){
 	// deletes elements in 2d array with very similar X and Y, returns new array
 	// tolerance for x values closeness
 	xTol = 2;
 	// tolerance for y values closeness
 	yTol = 5;
-	Array.print(d2Array);
+	//Array.print(d2Array);
 	// array to hold index of bad coordinates
 	badInd = newArray(0);
 	// find extremely similar indexes
-	for(i = 0; i < xT; i++){
+	for(i = 0; i < roiManager("count"); i++){
 		// Note: might want to exclude processing of bad indexes here
+		roiManager("select", i);
 		if(contains(badInd, i) == false){
 			// get x and y for i
-			d2x = twoDArrayGet(d2Array, xT, yT, i, 0);
-			d2y = twoDArrayGet(d2Array, xT, yT, i, 1);
+			d2x = -1;//twoDArrayGet(d2Array, xT, yT, i, 0);
+			d2y = -1;//twoDArrayGet(d2Array, xT, yT, i, 1);
+			temp = -2;
+			Roi.getBounds(d2x, d2y, temp, temp);
 			for(j = i+1; j < xT; j++){
-				diffX = abs(d2x - twoDArrayGet(d2Array, xT, yT, j, 0));
-				diffY = abs(d2y - twoDArrayGet(d2Array, xT, yT, j, 1));
-				if(diffX < xTol && diffY < yTol){
-					/*print(twoDArrayGet(d2Array, xT, yT, j, 0));
-					  print(twoDArrayGet(d2Array, xT, yT, j, 1));
-					  print(twoDArrayGet(d2Array, xT, yT, j, 2));
-					  print(twoDArrayGet(d2Array, xT, yT, j, 3));
-					  waitForUser("diffX:" + diffX + " diffY:" + diffY +
-					  "\nx:" + d2x + " y:" + d2y);*/
+				roiManager("select", j);
+				d2x2 = -1;
+				d2y2 = -1;
+				Roi.getBounds(d2x, d2y, temp, temp);
+				diffX = abs(d2x - d2x2);
+				diffY = abs(d2y - d2y2);
+				if(diffX < xTol && diffY < yTol){
 					badInd = Array.concat(badInd,j);
 				}//end if this is VERY close to d2Array[i]
 			}//end looping all the rest of the array
 		}//end if this array is good
 	}//end looping over d2Array
-	// make array based on learned dimensions
-	rnLng = xT - lengthOf(badInd);
-	rtnArr = twoDArrayInit(rnLng, yT);
-	curRtnInd = 0;
-	// add good indices to new array
-	for(i = 0; i < xT; i++){
-		if(contains(badInd, i) == false){
-			x = twoDArrayGet(d2Array, xT, yT, i, 0);
-			y = twoDArrayGet(d2Array, xT, yT, i, 1);
-			w = twoDArrayGet(d2Array, xT, yT, i, 2);
-			h = twoDArrayGet(d2Array, xT, yT, i, 3);
-			twoDArraySet(rtnArr, rnLng, yT, curRtnInd, 0, x);
-			twoDArraySet(rtnArr, rnLng, yT, curRtnInd, 1, y);
-			twoDArraySet(rtnArr, rnLng, yT, curRtnInd, 2, w);
-			twoDArraySet(rtnArr, rnLng, yT, curRtnInd, 3, h);
-			curRtnInd++;
-		}//end if this isn't a bad index
-	}//end looping over original array
-	return rtnArr;
-}//end deleteDuplicates(d2Array, xT, yT)
+	// just delete the bad indices
+	roiManager("select", badInd);
+	roiManager("delete");
+}//end deleteDuplicates()
 
 function contains(array, val){
 	foundVal = false;
