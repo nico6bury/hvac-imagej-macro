@@ -311,10 +311,7 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 	/*preNormalizationSort(rawCoordResults,rawCoordResultsRowCount,
 	rawCoordResultsColCount,2);*/
 	// delete some duplicates so we have an easier time of things
-	veryTempArray = deleteDuplicates(rawCoordResults, rawCoordResultsRowCount,
-	rawCoordResultsColCount);
-	lengthDiff = (lengthOf(rawCoordResults) - lengthOf(veryTempArray))
-	/ rawCoordResultsColCount;
+	deleteDuplicates();
 	// initialize 2d array we'll put our coordinates into before group construction
 	coordRecord = normalizeCellCount(veryTempArray, rawCoordResultsRowCount - lengthDiff,
 	rawCoordResultsColCount);
