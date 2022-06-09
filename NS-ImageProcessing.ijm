@@ -335,7 +335,8 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 		" to time, but we also run some procedures to correct this. Those procedures\n" +
 		" have failed. The file whose path is \n\"" + chosenFilePath + "\"\n will be" + 
 		"skipped. \nThere should have been " + gridCells + " cells, but instead we\n" +
-		"detected " + lengthOf(coordRecord) + " cells instead. If there are too few\n" +
+		"detected " + (lengthOf(coordRecord) / rawCoordResultsColCount) +
+		" cells instead. If there are too few\n" +
 		"cells, this can be caused by certain tolerance values within the program\n" + 
 		"being a little bit off for some outlier images. If there are too many cells\n" +
 		", that can be caused by an abundance of seeds which are horizontal and\n" + 
@@ -514,7 +515,7 @@ function serialize(){
 	File.close(fileVar);
 }//end serialize()
 
-function deserializeAndShowDialog(){
+function deserializeAndShowDialog(){ // TODO: Update deserialization
 	// deserialization for dialogue stuff
 	// get our file io out of the way
 	serializationPath = serializationDirectory();
@@ -650,7 +651,7 @@ function serializationDirectory(){
 	macrDir = getDirectory("macros");
 	macrDir += "Macro-Configuration/";
 	File.makeDirectory(macrDir);
-	macrDir += "MacroDriverConfig.txt";
+	macrDir += "DurumImageProcessingConfig.txt";
 	return macrDir;
 }//end serializationDirectory()
 
@@ -789,7 +790,7 @@ function areFilenamesValid(filenames, forbiddenStrings, allowDirectory){
  * not the program will give an explanation to the user as it steps
  * through execution.
  */
-function DynamicCoordGetter(shouldWait){
+function DynamicCoordGetter(shouldWait){ // TODO: Overhal Dynamic Coordinate Getter
 	// gets all the coordinates of the cells
 	// save a copy of the image so we don't screw up the original
 	makeBackup("coord");
@@ -844,7 +845,7 @@ function DynamicCoordGetter(shouldWait){
 }//end DynamicCoordGetter(shouldWait)
 
 // does not seem to work, so just ignore ig
-function preNormalizationSort(array,rcX,rcY,grpTol){
+function preNormalizationSort(array,rcX,rcY,grpTol){ // TODO: Overhall preNormalizationSort
 	for(i = 0; i < rcX; i++){
 		// set current element as minimum
 		mRecX = twoDArrayGet(array,rcX,rcY,i,0);
@@ -891,7 +892,7 @@ function preNormalizationSort(array,rcX,rcY,grpTol){
 	}//end looping over coords
 }//end preNormalizationSort()
 
-function deleteCorners(d2Array, xT, yT){
+function deleteCorners(d2Array, xT, yT){ // TODO: Overhall and fix deleteCorners
 	/* deletes elements in 2d array which touch the corners of the image.
 	 returns new array. This function is meant to work on an array of cell
 	 coords, not an array of seed coords.*/
@@ -960,7 +961,7 @@ function deleteCorners(d2Array, xT, yT){
 	 return d2Array2;
 }//end deleteCorners(d2Array, xT, yT)
 
-function deleteDuplicates(d2Array, xT, yT){
+function deleteDuplicates(d2Array, xT, yT){ // TODO: Overhall deleteDuplicates
 	// deletes elements in 2d array with very similar X and Y, returns new array
 	// tolerance for x values closeness
 	xTol = 2;
@@ -1022,7 +1023,7 @@ function contains(array, val){
 	return foundVal;
 }//end contains
 
-function normalizeCellCount(d2Arr, xT, yT){
+function normalizeCellCount(d2Arr, xT, yT){ // TODO: Overhall normalizeCellCount
 	// normalize the cell count of rawCoords to gridCells
 	// initialize 2d array we'll put our coordinates into before group construction
 	coordRecord = twoDArrayInit(gridCells, 4);
@@ -1121,7 +1122,7 @@ function normalizeCellCount(d2Arr, xT, yT){
  * be put within groups, as only items within groupTol of each other can
  * be within a group.
  */
-function constructGroups(coords2d,rcX,rcY,maxRows,maxRowLen,groupTol){
+function constructGroups(coords2d,rcX,rcY,maxRows,maxRowLen,groupTol){ // TODO: Overhall constructGroups
 	// constructs an unsorted 3d array based off of coords2d
 	// initialize array of groups of coordinate sets
 	coordGroups = threeDArrayInit(maxRows, maxRowLen, 4);
@@ -1176,7 +1177,7 @@ function constructGroups(coords2d,rcX,rcY,maxRows,maxRowLen,groupTol){
 	return coordGroups;
 }//end constructGroups(coords2d, maxRows, maxRowLen)
 
-function printGroups(grps,rcX,rcY,rcZ,filename){
+function printGroups(grps,rcX,rcY,rcZ,filename){ // TODO: Overhall printGroups
 	// print out a 3d array as a bunch of groups
 	// get our path stuff over with
 	filenameBase = File.getDirectory(chosenFilePath);
@@ -1206,7 +1207,7 @@ function printGroups(grps,rcX,rcY,rcZ,filename){
 	File.close(fileVar);
 }//end printGroups(grps,rcZ,rcY,rcX,filename)
 
-function sortGroups(threeDArray, grpCnt, rcY){
+function sortGroups(threeDArray, grpCnt, rcY){ // TODO: Overhall sortGroups
 	// sort the coordinates within their 3d array
 	for(i = 0; i < grpCnt; i++){
 		// sets most recent X as first X of first coord in i-th group
@@ -1234,7 +1235,7 @@ function sortGroups(threeDArray, grpCnt, rcY){
 	return threeDArray;
 }//end sortGroups(threeDArray, grpCnt)
 
-function selectGroup(d3A, aXT, aYT, aZT, aX){
+function selectGroup(d3A, aXT, aYT, aZT, aX){ // TODO: Overhall selectGroup
 	// returns a 2d array holding the specified froup from d3A
 	output = twoDArrayInit(aYT, aZT);
 	for(i = 0; i < aYT; i++){
@@ -1252,7 +1253,7 @@ function selectGroup(d3A, aXT, aYT, aZT, aX){
  * updates a group after you've taken it out as a slice using
  * selectGroup(). Necessary because of the lack of pointers.
  */
-function updateGroup(d3A, aXT, aYT, aZT, aX, d2A){
+function updateGroup(d3A, aXT, aYT, aZT, aX, d2A){ // TODO: Overhall updateGroup
 	// updates d3A with the group selection taken from selectGroup()
 	for(i = 0; i < aYT; i++){
 		for(j = 0; j < aZT; j++){
@@ -1268,7 +1269,7 @@ function updateGroup(d3A, aXT, aYT, aZT, aX, d2A){
  * resizes the coordinate in the specified 2d array of a single group
  * in order to conform to the given width and height.
  */
-function resizeGroup(grp, a2YT, a2ZT, W, H){
+function resizeGroup(grp, a2YT, a2ZT, W, H){ // TODO: Overhall resizeGroup
 	// resizes the coordinates to conform to given width and height
 	for(ii = 0; ii < a2YT; ii++){
 		// get the coords ready for this one
@@ -1286,7 +1287,7 @@ function resizeGroup(grp, a2YT, a2ZT, W, H){
 	}//end looping over each coordinate
 }//exx = twoDArrayGet(grp, a2YT, a2ZT, a2YI, 0);
 
-function shrinkCoord(grp,a2YT,a2ZT,a2YI,W,H){
+function shrinkCoord(grp,a2YT,a2ZT,a2YI,W,H){ // TODO: shrinkCoord
 	// shrinks one coordinate to match Width and Height
 	diffW = twoDArrayGet(grp, a2YT, a2ZT, a2YI, 2) - W;
 	diffH = twoDArrayGet(grp, a2YT, a2ZT, a2YI, 3) - H;
@@ -1310,7 +1311,7 @@ function shrinkCoord(grp,a2YT,a2ZT,a2YI,W,H){
 	}//end if difference between heights is greater than 0
 }//end shrinkCoord(grp,a2YT,a2ZT,a2YI,W,H)
 
-function growCoord(grp,a2YT,a2ZT,a2YI,W,H){
+function growCoord(grp,a2YT,a2ZT,a2YI,W,H){ // TODO: Overhall growCoord
 	// grows one coordinate to match width and height
 	diffW = W - twoDArrayGet(grp, a2YT, a2ZT, a2YI, 2);
 	diffH = H - twoDArrayGet(grp, a2YT, a2ZT, a2YI, 3);
@@ -1328,7 +1329,7 @@ function growCoord(grp,a2YT,a2ZT,a2YI,W,H){
 	}//end if difference between heights is greater than 0
 }//end growCoord(grp,a2YT,a2ZT,a2YI,W,H)
 
-function reprocessGroups(d3Arr, arrXT, arrYT, arrZT, W, H){
+function reprocessGroups(d3Arr, arrXT, arrYT, arrZT, W, H){ // TODO: Overhall reprocessGroups
 	// reprocesses groups so the values line up a bit better
 	for(i = 0; i < arrXT; i++){
 		// grabs the group as a 2d array so it's easier to handle
@@ -1344,7 +1345,7 @@ function reprocessGroups(d3Arr, arrXT, arrYT, arrZT, W, H){
  * Puts all the coords from threeDArray back into a 2d array with
  * the necessary flags added as part of the middle processing step.
  */
-function moveTo2d(threeDArray, grpCnt, formCoordCount){
+function moveTo2d(threeDArray, grpCnt, formCoordCount){ // TODO: Overhall moveto2d
 	// Puts all the coords from the 3d array into a 2d array
 	// 2d array of stuff
 	formCoords = twoDArrayInit(formCoordCount, 4);
@@ -1430,7 +1431,7 @@ function moveTo2d(threeDArray, grpCnt, formCoordCount){
 /*
  * 
  */
-function processKernel(X,Y,W,H,windowPattern,shouldWait,fileVar){
+function processKernel(X,Y,W,H,windowPattern,shouldWait,fileVar){ // TODO: Overhall processKernel
 	// make a selection and process the kernel
 
 	// make our selection, multiplying in order to convert to pixels from mm
@@ -1496,7 +1497,7 @@ function processKernel(X,Y,W,H,windowPattern,shouldWait,fileVar){
 /*
  * 
  */
-function processChalk(windowPattern, shouldWait, fileVar){
+function processChalk(windowPattern, shouldWait, fileVar){ // TODO: Overhall processChalk
 	// process the duplicate for chalk
 	
 	// reset our copy so we can get chalk
@@ -1597,7 +1598,7 @@ function recursiveMakeDirectory(directory){
 /*
  * 
  */
-function processResults(fm2dCrd,x,y,lT,hT,mS1,mS2,col,f1,f2,wFP,fn1,fn2,od){
+function processResults(fm2dCrd,x,y,lT,hT,mS1,mS2,col,f1,f2,wFP,fn1,fn2,od){ // TODO: Overhall processResults
 	// set the scale
 	run("Set Scale...", "distance=11.5 known=1 unit=mm global");
 	// save a copy of the image so we don't mess up the original
@@ -1748,14 +1749,14 @@ function processResults(fm2dCrd,x,y,lT,hT,mS1,mS2,col,f1,f2,wFP,fn1,fn2,od){
 	}//end if we need to close our file variable so we don't screw up the file
 }//end processResults(fm2dCrd,x,y,lT,hT,mS1,mS2,col,f1,f2,wFP,fn1,fn2,od)
 
-function isMissingCellFlag(d2A,xT,yT,x,y){
+function isMissingCellFlag(d2A,xT,yT,x,y){ // TODO: Maybe Overhaul isMissingCellFlag
 	// -1
 	val = twoDArrayGet(d2A,xT,yT,x,y);
 	if(val == -1) return true;
 	else return false;
 }//end 
 
-function isNewRowFlag(d2A,xT,yT,x,y){
+function isNewRowFlag(d2A,xT,yT,x,y){ // TODO: Maybe overhaul isNewRowFlag
 	// -2
 	val = twoDArrayGet(d2A,xT,yT,x,y);
 	if(val == -2) return true;
@@ -1821,7 +1822,7 @@ function openBackup(appendation, shouldClose){
  * in a 2d array. the columns argument should be the name of
  * all the columns in the results window
  */
-function getAllResults(columns){
+function getAllResults(columns){ // TODO: update getAllResults
 	// gets info from results window, storing it in 2d array
 	rowNum = nResults;
 	colNum = lengthOf(columns);
@@ -1849,7 +1850,7 @@ function getAllResults(columns){
  * It should be noted that the number of rows will be nResults and the
  * number of columns 4 for the array returned.
  */
-function getCoordinateResults(){
+function getCoordinateResults(){ // TODO: update getCoordinateResults
 	// gets coordinate results from results windows. Need bound rect
 	// save result columns we want
 	coordCols = newArray("BX","BY","Width","Height");
@@ -1872,7 +1873,7 @@ function getCoordinateResults(){
 /*
  * saves the data results to the specified path
  */
-function saveDataResultsArray(resultsArray, rowT, colT, path, columns){
+function saveDataResultsArray(resultsArray, rowT, colT, path, columns){ // TODO: update saveDataResultsArray
 	// saves data results to specified path
 	fileVar = File.open(path);
 	// print columns
@@ -1905,7 +1906,7 @@ function saveDataResultsArray(resultsArray, rowT, colT, path, columns){
  * to save. Make sure this is a valid filename from the start, but
  * don't include the extension
  */
-function saveRawResultsArray(array,rowT,colT,path,headers,folder,name){
+function saveRawResultsArray(array,rowT,colT,path,headers,folder,name){ // TODO: update saveRawResultsArray
 	// saves array to specified path with other specifications
 	// initialize variable for the file stream
 	fileVar = saveRawResultsArrayIOHelper(path, folder, name);
@@ -1931,7 +1932,7 @@ function saveRawResultsArray(array,rowT,colT,path,headers,folder,name){
 /*
  * Helper method for saveRawResultsArray()
  */
-function saveRawResultsArrayIOHelper(path, folder, name){
+function saveRawResultsArrayIOHelper(path, folder, name){// TODO: update saveRawResultsArrayIOHelper
 	// helper method for saveRawResultsArray
 	// figure out our folder schenanigans
 	if(folder != false && folder != ""){
@@ -1977,7 +1978,7 @@ function saveRawResultsArrayIOHelper(path, folder, name){
 /*
  * A helper method for a helper method
  */
-function saveRawResultsArrayIOHelperDialogHelper(){
+function saveRawResultsArrayIOHelperDialogHelper(){ // TODO: Update saveRawResultsArrayIOHelperDialogueHelper
 	// a helper method for saveRawResultsArrayIOHelper
 	Dialog.create("Enter File Name");
 	Dialog.addMessage(
@@ -2094,7 +2095,7 @@ function threeDArraySwap(array,yT,zT,x1,y1,x2,y2){
  * if you don't have at least one column for the area. 
  * Recommended is 11
  */
-function NewRowFlag(cols){
+function NewRowFlag(cols){// TODO: Update NewRowFlag
 	// 121.0
 	flagVals = newArray(121.0, 4.3,
 	7.0, 45.0, 9.8, 90, 0.8, 1.6, 0.6, 1.0);
@@ -2115,7 +2116,7 @@ function NewRowFlag(cols){
 /*
  * see NewRowFlag
  */
-function CellStartFlag(cols){
+function CellStartFlag(cols){// TODO: Update CellStartFlag
 	// 81.7
 	flagVals = newArray(81.7, 3.5, 5.9, 37.2, 13.2, 7.8, 90.0, 0.7,
 	1.7, 0.6, 1.0);
@@ -2137,7 +2138,7 @@ function CellStartFlag(cols){
 /*
  * see NewRowFlag
  */
-function CellEndFlag(cols){
+function CellEndFlag(cols){ // TODO: Update CellEndFlag
 	// 95.3
 	flagVals = newArray(95.3, 3.9, 6.1, 39.8, 13.7, 8.8, 90.0, 0.8,
 	1.6, 0.6, 1.0);
@@ -2159,7 +2160,7 @@ function CellEndFlag(cols){
 /*
  * prints an array out to a file
  */
-function debugPrintArray(d3A, xA, yA, zA, name){
+function debugPrintArray(d3A, xA, yA, zA, name){ // TODO: Remove references of outdated function
 	// build the file directory
 	fDir = File.getDirectory(chosenFilePath) + name + ".txt";
 	// open up the file
