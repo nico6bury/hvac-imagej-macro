@@ -253,11 +253,16 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 	chosenFilePath = filesToPrc[iijjkk];
 	open(chosenFilePath);
 	// start getting coordinates of cells
-	rawCoordResults = DynamicCoordGetter(shouldWaitForUserRaw);
-	rawCoordResultsRowCount = nResults;
-	rawCoordResultsColCount = 4;
+	// TODO: Refactoriing Starts here
+	DynamicCoordGetter(shouldWaitForUserRaw);
+	// set all the cells we found to group 3
+	for(i = 0; i < roiManager("count"); i++){
+		roiManager("select", i);
+		Roi.setGroup(3);
+	}//end changing group of each cell coordinate to 3
 	// delete corners
-	rawCoordResults2 = deleteCorners(rawCoordResults, rawCoordResultsRowCount, rawCoordResultsColCount);
+	//rawCoordResults2 = deleteCorners(rawCoordResults, rawCoordResultsRowCount, rawCoordResultsColCount);
+	deleteCorners();
 	// update raw coordinate results array
 	rawCoordResults = rawCoordResults2;
 	rawCoordResultsRowCount = lengthOf(rawCoordResults) / rawCoordResultsColCount;
@@ -790,7 +795,7 @@ function areFilenamesValid(filenames, forbiddenStrings, allowDirectory){
  * not the program will give an explanation to the user as it steps
  * through execution.
  */
-function DynamicCoordGetter(shouldWait){ // TODO: Overhal Dynamic Coordinate Getter
+function DynamicCoordGetter(shouldWait){
 	// gets all the coordinates of the cells
 	// save a copy of the image so we don't screw up the original
 	makeBackup("coord");
@@ -829,16 +834,16 @@ function DynamicCoordGetter(shouldWait){ // TODO: Overhal Dynamic Coordinate Ge
 	run("Set Measurements...",
 	"bounding redirect=None decimal=1");
 	// set particle analysis to only detect the cells as particles
-	run("Analyze Particles...", 
-	"size=25-Infinity circularity=0.05-1.00 show=[Overlay Masks] " +
-	"display exclude clear include");
+	run("Analyze Particles...", "size=25-Infinity circularity=0.05-1.00 "+
+	"show=[Overlay Masks] display exclude clear include add");
 	if(shouldWait){
 		showMessageWithCancel("Action Required",
 		"Scale and Measurements were set, so now " + 
 		"we have detected what cells we can.");
 	}//end if we need to wait
-	// extract coordinate results from results display
-	coordsArray = getCoordinateResults();
+	// We should have all the coordinates in the roi manager
+	/*/ extract coordinate results from results display
+	//coordsArray = getCoordinateResults();*/
 	// open the backup
 	openBackup("coord", true);
 	return coordsArray;
@@ -892,10 +897,10 @@ function preNormalizationSort(array,rcX,rcY,grpTol){ // TODO: Overhall preNorma
 	}//end looping over coords
 }//end preNormalizationSort()
 
-function deleteCorners(d2Array, xT, yT){ // TODO: Overhall and fix deleteCorners
-	/* deletes elements in 2d array which touch the corners of the image.
-	 returns new array. This function is meant to work on an array of cell
-	 coords, not an array of seed coords.*/
+function deleteCorners(d2Array, xT, yT){
+	/* deletes regions of intererst which touch the corners of the image.
+	 This function is meant to work on rois that correspond to a cell, not
+	 a seed.*/
 	 // tolerance for left x
 	 xTolL = 3;
 	 // tolerance for right x
@@ -916,12 +921,12 @@ function deleteCorners(d2Array, xT, yT){ // TODO: Overhall and fix deleteCorner
 	 // make array to keep track of indexes with corners
 	 badInd = newArray();
 	 // loop through and find corners
-	 for(i = 0; i < xT; i++){
+	 for(i = 0; i < roiManager("count"); i++){
 		// retrieve x,y,width,height for this index
-	 	d2x = twoDArrayGet(d2Array, xT, yT, i, 0);
-	 	d2y = twoDArrayGet(d2Array, xT, yT, i, 1);
-	 	d2w = twoDArrayGet(d2Array, xT, yT, i, 2);
-	 	d2h = twoDArrayGet(d2Array, xT, yT, i, 3);
+		roiManager("select", i);
+	 	d2x = -1; d2y = -1;
+	 	d2w = -1; d2h = -1;
+	 	Roi.getBounds(d2x, d2y, d2w, d2h);
 	 	// test for top left corner
 	 	if(abs(d2x - 0) < xTolL && abs(d2y - 0) < yTolUp){
 	 		// keep track of index of corner
@@ -941,24 +946,9 @@ function deleteCorners(d2Array, xT, yT){ // TODO: Overhall and fix deleteCorner
 	 		badInd = Array.concat(badInd,i);
 	 	}//end else if we found the bottom right corner
 	 }//end looping over d2Array
-	 // now that we know how many corners there are, we can
-	 // create an array to hold the non-corners
-	 xT2 = (lengthOf(d2Array) / yT) - lengthOf(badInd);
-	 d2Array2 = twoDArrayInit(xT2, yT);
-	 // create a reference variable for next index in d2Array
-	 nxtInd = 0;
-	 // add all the non-corner indexes to the new array
-	 for(i = 0; i < xT; i++){
-	 	if(!contains(badInd, i)){
-	 		for(j = 0; j < yT; j++){
-	 			temp = twoDArrayGet(d2Array, xT, yT, i, j);
-	 			twoDArraySet(d2Array2, xT2, yT, nxtInd, j, temp);
-	 		}//end copying each 2d elem over
-	 		nxtInd++;
-	 	}//end if this element isn't a corner
-	 }//end copying parts of the old array into new array
-	 //debugthis
-	 return d2Array2;
+	 // just delete the non-corners
+	 roiManager("select", badInd);
+	 roiManager("delete");
 }//end deleteCorners(d2Array, xT, yT)
 
 function deleteDuplicates(d2Array, xT, yT){ // TODO: Overhall deleteDuplicates
