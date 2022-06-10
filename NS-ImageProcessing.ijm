@@ -349,7 +349,7 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 		coordGroups = constructGroups(coordRecord, gridCells,
 					rawCoordResultsColCount, maxRows, maxRowLen, groupTol);
 		// check that groups went okay
-		if(lengthOf(coordGroups) == 0){
+		if(false){// TODO: Fix up this error message somehow. Maybe Delete it?
 			if(shouldShowRoutineErrors == true){
 				showMessageWithCancel("It seems something went wrong when constructing" +
 			"groups that would have caused an array out of bounds exception. \nAs " +
@@ -360,7 +360,7 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 		}//end if we need to skip a grid
 		else{
 			// print out the raw groups if we need to
-			if(shouldOutputRawCoords == true){
+			if(shouldOutputRawCoords == true && false){ //TODO: Redo the printing stuff
 				printGroups(coordGroups,maxRows,maxRowLen,4,"Raw Groups");
 			}//end if we're outputting raw coordinates
 			// sort the groups without really touching the flags at all
@@ -369,7 +369,7 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 			reprocessGroups(coordGroups, maxRows, maxRowLen, 4, mmCellWidth,
 			mmCellHeight);
 			// print out the re-processed groups if we need to
-			if(shouldOutputRawCoords == true){
+			if(shouldOutputRawCoords == true && false){ //TODO: Redo the printing stuff
 				printGroups(coordGroups,maxRows,maxRowLen,4,"Re-Processed Groups");
 			}//end if we're outputting raw coordinates
 			// rows grid, plus newrowflag for each row, plus 1 at the beginning
@@ -377,7 +377,7 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 			// Puts all the coords from the 3d array into a 2d array with proper flags
 			formedCoords = moveTo2d(coordGroups, maxRows, formCoordCount);
 			// prints out formatted groups if necessary
-			if(shouldOutputRawCoords){
+			if(shouldOutputRawCoords && false){ //TODO: Redo the printing stuff
 				folderVar = "null";
 				if(outputToNewFolderRaw == true){
 					folderVar = newFolderNameRaw;
@@ -1070,7 +1070,7 @@ function normalizeCellCount(){
 			mRecY = thisY;
 		}//end looping over cells in rawCoordResults
 		// quick fix for renaming files
-		if(shouldOutputRawCoords == true){ //TODO: Redo this for ROI
+		if(shouldOutputRawCoords == true){ //TODO: Redo printing for ROI
 			fileNameBase = File.getName(chosenFilePath);
 			folderSpecifier = newFolderNameRaw;
 			if(outputToNewFolderRaw == false) folderSpecifier = false;
