@@ -255,16 +255,13 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 	// start getting coordinates of cells
 	// TODO: Refactoriing Starts here
 	DynamicCoordGetter(shouldWaitForUserRaw);
-	// set all the cells we found to group 3
+	// set all the cells we found to group 100
 	for(i = 0; i < roiManager("count"); i++){
 		roiManager("select", i);
-		Roi.setGroup(3);
+		Roi.setGroup(100);
 	}//end changing group of each cell coordinate to 3
 	// delete corners
 	deleteCorners();
-	/* update raw coordinate results array
-	rawCoordResults = rawCoordResults2;
-	rawCoordResultsRowCount = lengthOf(rawCoordResults) / rawCoordResultsColCount;*/
 	// displays options explanation
 	if(shouldWaitForUserRaw){
 		showMessageWithCancel("Action Required",
@@ -313,14 +310,13 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 	// delete some duplicates so we have an easier time of things
 	deleteDuplicates();
 	// initialize 2d array we'll put our coordinates into before group construction
-	coordRecord = normalizeCellCount(veryTempArray, rawCoordResultsRowCount - lengthDiff,
-	rawCoordResultsColCount);
+	normalizeCellCount();
 	if(shouldWaitForUserRaw){
 		showMessageWithCancel("Finished Cell Count Normalization",
 		"Macro has finished trying to normalize cell count.");
 	}//end if we want to wait for the user
 	// check that we actually did do our normalization correctly
-	if(lengthOf(coordRecord) == 0){
+	if(roiManager("count") == 0){
 		if(shouldShowRoutineErrors == true){
 			showMessageWithCancel("Unfortunately, it seems like the previous error " +
 		"isn't something we can solve easily at the moment. As such, I'm going " +
@@ -329,14 +325,14 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 		}//end if we want to show a routine error
 		failedFilenames = Array.concat(failedFilenames, chosenFilePath);
 	}//end if we failed to normalize cell count
-	else if(lengthOf(coordRecord) / rawCoordResultsColCount != gridCells){
+	else if(roiManager("count") != gridCells){
 		if(shouldShowRoutineErrors == true){
 			showMessageWithCancel("Cell Count Normalization Failed",
 		"It seems we have found too many or too few cells. This happens from time\n" + 
 		" to time, but we also run some procedures to correct this. Those procedures\n" +
 		" have failed. The file whose path is \n\"" + chosenFilePath + "\"\n will be" + 
 		"skipped. \nThere should have been " + gridCells + " cells, but instead we\n" +
-		"detected " + (lengthOf(coordRecord) / rawCoordResultsColCount) +
+		"detected " + roiManager("count") +
 		" cells instead. If there are too few\n" +
 		"cells, this can be caused by certain tolerance values within the program\n" + 
 		"being a little bit off for some outlier images. If there are too many cells\n" +
@@ -831,7 +827,7 @@ function DynamicCoordGetter(shouldWait){
 	"bounding redirect=None decimal=1");
 	// set particle analysis to only detect the cells as particles
 	run("Analyze Particles...", "size=25-Infinity circularity=0.05-1.00 "+
-	"show=[Overlay Masks] display exclude clear include add");
+	"exclude clear include add");
 	if(shouldWait){
 		showMessageWithCancel("Action Required",
 		"Scale and Measurements were set, so now " + 
@@ -842,7 +838,6 @@ function DynamicCoordGetter(shouldWait){
 	//coordsArray = getCoordinateResults();*/
 	// open the backup
 	openBackup("coord", true);
-	return coordsArray;
 }//end DynamicCoordGetter(shouldWait)
 
 // does not seem to work, so just ignore ig
@@ -893,31 +888,31 @@ function preNormalizationSort(array,rcX,rcY,grpTol){ // TODO: Overhall preNorma
 	}//end looping over coords
 }//end preNormalizationSort()
 
-function deleteCorners(d2Array, xT, yT){
+function deleteCorners(){
 	/* deletes regions of intererst which touch the corners of the image.
 	 This function is meant to work on rois that correspond to a cell, not
 	 a seed.*/
-	 // tolerance for left x
-	 xTolL = 3;
-	 // tolerance for right x
-	 xTolR = 3;
-	 // tolerance for top y
-	 yTolUp = 3;
-	 // tolerance for bottom y
-	 yTolBot = 3;
-	 // find borders of image
-	 imgWidth = 0;
-	 imgHeight = 0;
-	 temp = 0;
-	 // out parameter configuration ???
-	 getDimensions(imgWidth, imgHeight, temp, temp, temp);
-	 // account for pixels-to-milimeter
-	 imgWidth = imgWidth / ppm;
-	 imgHeight = imgHeight / ppm;
-	 // make array to keep track of indexes with corners
-	 badInd = newArray();
-	 // loop through and find corners
-	 for(i = 0; i < roiManager("count"); i++){
+	// tolerance for left x
+	xTolL = 3;
+	// tolerance for right x
+	xTolR = 3;
+	// tolerance for top y
+	yTolUp = 3;
+	// tolerance for bottom y
+	yTolBot = 3;
+	// find borders of image
+	imgWidth = 0;
+	imgHeight = 0;
+	temp = 0;
+	// out parameter configuration ???
+	getDimensions(imgWidth, imgHeight, temp, temp, temp);
+	// account for pixels-to-milimeter
+	imgWidth = imgWidth / ppm;
+	imgHeight = imgHeight / ppm;
+	// make array to keep track of indexes with corners
+	badInd = newArray();
+	// loop through and find corners
+	for(i = 0; i < roiManager("count"); i++){
 		// retrieve x,y,width,height for this index
 		roiManager("select", i);
 	 	d2x = -1; d2y = -1;
@@ -941,10 +936,12 @@ function deleteCorners(d2Array, xT, yT){
 	 		// keep track of index of corner
 	 		badInd = Array.concat(badInd,i);
 	 	}//end else if we found the bottom right corner
-	 }//end looping over d2Array
-	 // just delete the non-corners
-	 roiManager("select", badInd);
-	 roiManager("delete");
+	}//end looping over d2Array
+	// just delete the non-corners
+	if(lengthOf(badInd) != 0){
+		roiManager("select", badInd);
+		roiManager("delete");
+	}// end if we have indices to delete
 }//end deleteCorners()
 
 function deleteDuplicates(){
@@ -966,7 +963,7 @@ function deleteDuplicates(){
 			d2y = -1;//twoDArrayGet(d2Array, xT, yT, i, 1);
 			temp = -2;
 			Roi.getBounds(d2x, d2y, temp, temp);
-			for(j = i+1; j < xT; j++){
+			for(j = i+1; j < roiManager("count"); j++){
 				roiManager("select", j);
 				d2x2 = -1;
 				d2y2 = -1;
@@ -980,8 +977,10 @@ function deleteDuplicates(){
 		}//end if this array is good
 	}//end looping over d2Array
 	// just delete the bad indices
-	roiManager("select", badInd);
-	roiManager("delete");
+	if(lengthOf(badInd) != 0){
+		roiManager("select", badInd);
+		roiManager("delete");
+	}//end if we have bad indices to delete
 }//end deleteDuplicates()
 
 function contains(array, val){
@@ -994,25 +993,31 @@ function contains(array, val){
 	return foundVal;
 }//end contains
 
-function normalizeCellCount(d2Arr, xT, yT){ // TODO: Overhall normalizeCellCount
+/*
+ * Returns:
+ * +0 if everything is fine
+ * -1 if not enough cells located
+ * -2 if an issue that would cause failure to change rois
+ */
+function normalizeCellCount(){
 	// normalize the cell count of rawCoords to gridCells
 	// initialize 2d array we'll put our coordinates into before group construction
-	coordRecord = twoDArrayInit(gridCells, 4);
+	//coordRecord = twoDArrayInit(gridCells, 4);
 	// check to make sure we have the right number of cells
-	if(nResults < gridCells){
+	if(roiManager("count") < gridCells){
 		if(shouldShowRoutineErrors == true){
 			showMessageWithCancel("Unexpected Cell Number",
 		"In the file " + File.getName(chosenFilePath) + ", which is located at \n" +
 		chosenFilePath + ", \n" +
 		"it seems that we were unable to detect the location of every cell. \n" + 
 		"There should be " + gridCells + " cells in the grid, but we have only \n" + 
-		"detected " + nResults + " of them. This could be very problematic later on.");
+		"detected " + roiManager("count") + " of them. This could be very problematic later on.");
 		}//end if we want to show a routine error
-		return newArray(0);
+		return -1;
 	}//end if we haven't detected all the cells we should have
 	else if(nResults > gridCells){
 		// we'll need to delete extra cells
-		curCellCt = nResults;
+		curCellCt = roiManager("count");
 		// if less than tol, then on same row
 		inCelTol = 2.7;// was 1.5
 		// if more than tol, then on different row
@@ -1020,28 +1025,23 @@ function normalizeCellCount(d2Arr, xT, yT){ // TODO: Overhall normalizeCellCoun
 		// current index we're putting stuff into for coordRecord
 		curRecInd = 0;
 		// set most recent Y by default as first Y
-		mRecY = twoDArrayGet(d2Arr,xT,yT,0,1);
+		roiManager("select", 0);
+		temp = -1;
+		mRecY = -1;//twoDArrayGet(d2Arr,xT,yT,0,1);
+		Roi.getBounds(temp, mRecY, temp, temp);
 		// set most recent difference to 0
 		mRecDiff = 0;
-		for(i = 0; i < xT; i++){
+		for(i = 0; i < roiManager("count"); i++){
 			// figure out how this Y compares to last one
-			thisY = twoDArrayGet(d2Arr,xT,yT,i,1);
-			x = twoDArrayGet(d2Arr,xT,yT,i,0);
-			w = twoDArrayGet(d2Arr,xT,yT,i,2);
-			h = twoDArrayGet(d2Arr,xT,yT,i,3);
+			thisY = -1;
+			x = -1;
+			w = -1;
+			h = -1;
+			roiManager("select", i);
+			Roi.getBounds(x, thisY, w, h);
 			diffFromRec = abs(thisY - mRecY);
 			if(diffFromRec < inCelTol || diffFromRec > outCelTol){
-				// add this index of rawCoordResults to coordRecord
-				a = twoDArraySet(coordRecord,gridCells,4,curRecInd,0,x);
-				b = twoDArraySet(coordRecord,gridCells,4,curRecInd,1,thisY);
-				c = twoDArraySet(coordRecord,gridCells,4,curRecInd,2,w);
-				d = twoDArraySet(coordRecord,gridCells,4,curRecInd,3,h);
-				// check that we're in bounds
-				if(a == false || b == false || c == false || d == false){
-					if(ignorePossibleErrors != true){
-						return newArray(0);
-					}//end if we don't want to ignore possible errors
-				}//end if we found a problem
+				// keep this index in the list
 				// print something to the log
 				print("found a normal cell, indexed to "+curRecInd +
 				", diffFromRec of " + diffFromRec);
@@ -1049,7 +1049,7 @@ function normalizeCellCount(d2Arr, xT, yT){ // TODO: Overhall normalizeCellCoun
 				curRecInd++;
 			}//end if we think differences look normal
 			else if(mRecDiff > inCelTol && mRecDiff < outCelTol){
-				// add this index of rawCoordResults to coordRecord
+				// keep this index in the list
 				twoDArraySet(coordRecord,gridCells,4,curRecInd,0,x);
 				twoDArraySet(coordRecord,gridCells,4,curRecInd,1,thisY);
 				twoDArraySet(coordRecord,gridCells,4,curRecInd,2,w);
@@ -1061,7 +1061,8 @@ function normalizeCellCount(d2Arr, xT, yT){ // TODO: Overhall normalizeCellCoun
 			}//end else if last one was not good, so this one is bad because of that
 			else{
 				// print something to the log
-				print("found the start of a bad cell, not adding it");
+				print("found the start of a bad cell, deleting it");
+				roiManager("delete");
 			}//end else we found the start of a bad cell
 
 			// set most recent Y again so it's updated for next iteration
@@ -1069,7 +1070,7 @@ function normalizeCellCount(d2Arr, xT, yT){ // TODO: Overhall normalizeCellCoun
 			mRecY = thisY;
 		}//end looping over cells in rawCoordResults
 		// quick fix for renaming files
-		if(shouldOutputRawCoords == true){
+		if(shouldOutputRawCoords == true){ //TODO: Redo this for ROI
 			fileNameBase = File.getName(chosenFilePath);
 			folderSpecifier = newFolderNameRaw;
 			if(outputToNewFolderRaw == false) folderSpecifier = false;
@@ -1079,10 +1080,9 @@ function normalizeCellCount(d2Arr, xT, yT){ // TODO: Overhall normalizeCellCoun
 		}//end if we're outputting a file
 	}//end else if there are too many cells
 	else{
-		// just set coordResult to rawCoordResults
-		coordRecord = rawCoordResults;
+		// we don't have to do anything
 	}//end else we have the right number of cells
-	return coordRecord;
+	return 0;
 }//end normalizeCellCount()
 
 /*
