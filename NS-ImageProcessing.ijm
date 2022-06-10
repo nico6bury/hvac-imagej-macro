@@ -255,11 +255,6 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 	// start getting coordinates of cells
 	// TODO: Refactoriing Starts here
 	DynamicCoordGetter(shouldWaitForUserRaw);
-	// set all the cells we found to group 100
-	for(i = 0; i < roiManager("count"); i++){
-		roiManager("select", i);
-		Roi.setGroup(100);
-	}//end changing group of each cell coordinate to 3
 	// delete corners
 	deleteCorners();
 	// displays options explanation
@@ -346,8 +341,12 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 	}//end if we have the wrong number of cells STILL
 	else{
 		// initialize array of groups of coordinate sets
-		coordGroups = constructGroups(coordRecord, gridCells,
-					rawCoordResultsColCount, maxRows, maxRowLen, groupTol);
+		coordGroups = constructGroups(maxRows, maxRowLen, groupTol);
+		
+		///////////////////////////////////////////////////////////////
+		        STOP!!!  OUTDATED CODE BEYOND THIS POINT!
+		///////////////////////////////////////////////////////////////
+		
 		// check that groups went okay
 		if(false){// TODO: Fix up this error message somehow. Maybe Delete it?
 			if(shouldShowRoutineErrors == true){
@@ -789,10 +788,10 @@ function areFilenamesValid(filenames, forbiddenStrings, allowDirectory){
  */
 function DynamicCoordGetter(shouldWait){
 	// gets all the coordinates of the cells
-	// save a copy of the image so we don't screw up the original
-	makeBackup("coord");
 	// horizontally flip the image so we have things alligned properly
 	run("Flip Horizontally");
+	// save a copy of the image so we don't screw up the original
+	makeBackup("coord");
 	if(shouldWait){
 		showMessageWithCancel("Action Required",
 		"Image has been flipped");
@@ -1093,59 +1092,34 @@ function normalizeCellCount(){
  * be put within groups, as only items within groupTol of each other can
  * be within a group.
  */
-function constructGroups(coords2d,rcX,rcY,maxRows,maxRowLen,groupTol){ // TODO: Overhall constructGroups
-	// constructs an unsorted 3d array based off of coords2d
-	// initialize array of groups of coordinate sets
-	coordGroups = threeDArrayInit(maxRows, maxRowLen, 4);
-	// populate group array with default values
-	for(i = 0; i < maxRows; i++){
-		for(j = 0; j < maxRowLen; j++){
-			for(k = 0; k < 4; k++){
-				// set values to missing cell flag
-				threeDArraySet(coordGroups,maxRowLen,4,i,j,k,-1);
-			}//end looping over 3rd dimension
-		}//end looping over 2nd dimension
-	}//end looping over 1st dimension
-
+function constructGroups(maxRows,maxRowLen,groupTol){ // TODO: Overhall constructGroups
 	// current index of the group we're building into
 	curGroup = 0;
-	// current index within our current group to put stuff into next
-	curGroupInd = 0;
 	// set most recent Y by default as first Y coordinate
-	mostRecentY = twoDArrayGet(coords2d, rcX, rcY, 0, 1);
+	temp = -1;
+	mostRecentY = -1;//twoDArrayGet(coords2d, rcX, rcY, 0, 1);
+	roiManager("select", 0);
+	Roi.getBounds(temp, mostRecentY, temp, temp);
 	// try to construct groups
-	for(i = 0; i < rcX; i++){
+	for(i = 0; i < roiManager("count"); i++){
+		roiManager("select", i);
 		// save some calculated values for our if statement
-		thisY = twoDArrayGet(coords2d, rcX, rcY, i, 1);
-		diffFromRec = abs(thisY - mostRecentY);
 		// also calculate a few more for easier expressions
-		x1 = twoDArrayGet(coords2d, rcX, rcY, i, 0);
-		width1 = twoDArrayGet(coords2d, rcX, rcY, i, 2);
-		height1 = twoDArrayGet(coords2d, rcX, rcY, i, 3);
-	
+		x1 = -1;//twoDArrayGet(coords2d, rcX, rcY, i, 0);
+		thisY = -1;//twoDArrayGet(coords2d, rcX, rcY, i, 1);
+		width1 = -1;//twoDArrayGet(coords2d, rcX, rcY, i, 2);
+		height1 = -1;//twoDArrayGet(coords2d, rcX, rcY, i, 3);
+		Roi.getBounds(x1, thisY, width1, height1);
+		diffFromRec = abs(thisY - mostRecentY);
 		// find out if we need to add to a new group
 		if(diffFromRec > groupTol){
 			curGroup++;
-			curGroupInd = 0;
-		}//end if this Y is outside tolerance
-	
-		// put the coordinates in the grouped array in the right group slot
-		a = threeDArraySet(coordGroups,maxRowLen,4,curGroup,curGroupInd,0,x1);
-		b = threeDArraySet(coordGroups,maxRowLen,4,curGroup,curGroupInd,1,thisY);
-		c = threeDArraySet(coordGroups,maxRowLen,4,curGroup,curGroupInd,2,width1);
-		d = threeDArraySet(coordGroups,maxRowLen,4,curGroup,curGroupInd,3,height1);
-		// check that nothing went wrong
-		if(a == false || b == false || c == false || d == false){
-			if(ignorePossibleErrors != true){
-				return newArray(0);			
-			}//end if we're not ignoring possible errors
-		}//end if something went wrong
-		
-		// update various reference variables
-		curGroupInd++;
-		mostRecentY = thisY;
+		}//end if this Y is outside tolerance, need new group
+		// we want to add this roi to current group either way
+		roiManager("select", i);
+		Roi.setGroup(curGroup);
 	}//end looping over coordinates
-	return coordGroups;
+	return 0;
 }//end constructGroups(coords2d, maxRows, maxRowLen)
 
 function printGroups(grps,rcX,rcY,rcZ,filename){ // TODO: Overhall printGroups
