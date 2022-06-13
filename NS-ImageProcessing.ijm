@@ -1132,7 +1132,7 @@ function constructGroups(maxRows,maxRowLen,groupTol){ // TODO: Overhall constru
  * 
  * Return Explanation
  * Array Containing:
- * insideBounds : Whether obj2 is inside obj1
+ * insideBounds : Whether obj2 is inside obj1 or vice versa.
  * overlapBool : Whether the objects have overlapping bounds
  * adjacencyBool[REMOVED] : Whether the objects are adjacent 
  */
@@ -1158,6 +1158,18 @@ function locationRelation(obj1Low,obj1Up,adjTol,obj2Low,obj2Up){
 	
 	return newArray(insideBoundsBool, overlapBool/*, adjacencyBool*/);
 }//end locationRelation(obj1Low,obj1Up,adjTol,obj2Low,obj2Up)
+
+/*
+ * Returns length 2 array with y and (y+height) of currently selected roi
+ * tries to automatically convert things to mm by dividing by 11.5
+ */
+function getRoiYBounds(){
+	roiY = -1;
+	roiHeight = -1;
+	temp = -1;
+	Roi.getBounds(roiY, temp, roiHeight, temp);
+	return newArray(roiY / 11.5, (roiY + roiHeight) / 11.5);
+}//end getRoiYBounds
 
 function printGroups(grps,rcX,rcY,rcZ,filename){ // TODO: Overhall printGroups
 	// print out a 3d array as a bunch of groups
