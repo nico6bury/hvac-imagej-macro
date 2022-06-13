@@ -1122,6 +1122,43 @@ function constructGroups(maxRows,maxRowLen,groupTol){ // TODO: Overhall constru
 	return 0;
 }//end constructGroups(coords2d, maxRows, maxRowLen)
 
+/**
+ * Parameter Explanation
+ * obj1Low : Lower y bound of first object
+ * obj1Up : Upper y bound of first object
+ * adjTol : applied to obj1, closeness required for obj2 to be adjacent
+ * obj2Low : Lower y bound of second object
+ * obj2Up : Upper y bound of second object
+ * 
+ * Return Explanation
+ * Array Containing:
+ * insideBounds : Whether obj2 is inside obj1
+ * overlapBool : Whether the objects have overlapping bounds
+ * adjacencyBool : Whether the objects are adjacent
+ */
+function locationRelation(obj1Low,obj1Up,adjTol,obj2Low,obj2Up){
+	insideBoundsBool = false;
+	overlapBool = false;
+	adjacencyBool = false;
+	
+	if(obj1Low <= obj2Low && obj1Up >= obj2Up)
+	{insideBoundsBool = true;}
+	if(
+		((obj1Low <= obj2Up) && (obj1Up >= obj2Up))
+							 ||
+		((obj1Up >= obj2Low) && (obj1Low <= obj2Low))
+	)
+	{overlapBool = true;}
+	if(
+		( ((obj1Up + adjTol) >= obj2Low) && (obj1Up <= obj2Low) )
+										 ||
+		( ((obj1Low - adjTol) <= obj2Up) && (obj1Low >= obj2Up) )
+	)
+	{adjacencyBool = true;}
+	
+	return newArray(insideBoundsBool, overlapBool, adjacencyBool);
+}//end locationRelation(obj1Low,obj1Up,adjTol,obj2Low,obj2Up)
+
 function printGroups(grps,rcX,rcY,rcZ,filename){ // TODO: Overhall printGroups
 	// print out a 3d array as a bunch of groups
 	// get our path stuff over with
