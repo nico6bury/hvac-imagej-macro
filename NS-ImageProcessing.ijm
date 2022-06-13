@@ -262,6 +262,9 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 		showMessageWithCancel("Action Required",
 		"The raw coordinates rois have been saved from the results window.");
 	}//end if we should wait for the user
+	// make sure that the rois show up properly
+	setOption("Show All", false);
+	setOption("Show All", true);
 	// save things to where they need to go
 	if(shouldOutputRawCoords == true && false){// TODO: Fix this to use ROI saving
 		if(shouldWaitForUserRaw){
@@ -1106,8 +1109,7 @@ function constructGroups(maxRows,maxRowLen,groupTol){ // TODO: Overhall constru
 			// test location relation of roi and group
 			relLoc = locationRelation(gridLowBound[j],gridUpBound[j],0,roiBounds[0],roiBounds[1]);
 			if(relLoc[0] || relLoc[1]){
-				// TODO: Write code to add this roi to group j
-				Roi.setGroup(j);
+				Roi.setGroup(j+1);
 				gridLowBound[j] = Math.min(gridLowBound[j], roiBounds[0]);
 				gridUpBound[j] = Math.max(gridUpBound[j], roiBounds[1]);
 				// don't try adding this roi to any new groups
@@ -1115,16 +1117,15 @@ function constructGroups(maxRows,maxRowLen,groupTol){ // TODO: Overhall constru
 			}//end if we've found a matching group for this roi
 		}//end looping over the groups we want to test out
 		if(Roi.getGroup() == 0){
-			// TODO: Write code to make a new group
 			// change set group of selected roi
-			Roi.setGroup(lengthOf(gridLowBound));
+			Roi.setGroup(lengthOf(gridLowBound)+1);
 			// expand size of parallel arrays
 			gridLowBound = Array.concat(gridLowBound,roiBounds[0]);
 			gridUpBound = Array.concat(gridUpBound,roiBounds[1]);
 		}//end if we couldn't find a group and need to make a new one
 	}//end looping over rois we want to group
 	return 0;
-}//end constructGroups(coords2d, maxRows, maxRowLen)
+}//end constructGroups(maxRows,maxRowLen,groupTol)
 
 /**
  * Parameter Explanation
