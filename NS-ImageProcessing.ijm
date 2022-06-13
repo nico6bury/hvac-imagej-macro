@@ -1134,12 +1134,12 @@ function constructGroups(maxRows,maxRowLen,groupTol){ // TODO: Overhall constru
  * Array Containing:
  * insideBounds : Whether obj2 is inside obj1
  * overlapBool : Whether the objects have overlapping bounds
- * adjacencyBool : Whether the objects are adjacent
+ * adjacencyBool[REMOVED] : Whether the objects are adjacent 
  */
 function locationRelation(obj1Low,obj1Up,adjTol,obj2Low,obj2Up){
 	insideBoundsBool = false;
 	overlapBool = false;
-	adjacencyBool = false;
+	//adjacencyBool = false;
 	
 	if(obj1Low <= obj2Low && obj1Up >= obj2Up)
 	{insideBoundsBool = true;}
@@ -1149,14 +1149,14 @@ function locationRelation(obj1Low,obj1Up,adjTol,obj2Low,obj2Up){
 		((obj1Up >= obj2Low) && (obj1Low <= obj2Low))
 	)
 	{overlapBool = true;}
-	if(
+	/*if(
 		( ((obj1Up + adjTol) >= obj2Low) && (obj1Up <= obj2Low) )
 										 ||
 		( ((obj1Low - adjTol) <= obj2Up) && (obj1Low >= obj2Up) )
 	)
-	{adjacencyBool = true;}
+	{adjacencyBool = true;}*/
 	
-	return newArray(insideBoundsBool, overlapBool, adjacencyBool);
+	return newArray(insideBoundsBool, overlapBool/*, adjacencyBool*/);
 }//end locationRelation(obj1Low,obj1Up,adjTol,obj2Low,obj2Up)
 
 function printGroups(grps,rcX,rcY,rcZ,filename){ // TODO: Overhall printGroups
