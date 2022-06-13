@@ -1093,32 +1093,36 @@ function normalizeCellCount(){
  * be within a group.
  */
 function constructGroups(maxRows,maxRowLen,groupTol){ // TODO: Overhall constructGroups
-	// current index of the group we're building into
-	curGroup = 0;
-	// set most recent Y by default as first Y coordinate
-	temp = -1;
-	mostRecentY = -1;//twoDArrayGet(coords2d, rcX, rcY, 0, 1);
-	roiManager("select", 0);
-	Roi.getBounds(temp, mostRecentY, temp, temp);
-	// try to construct groups
+	// initialize group bounds arrays
+	gridLowBound = newArray(0);
+	gridUpBound = newArray(0);
 	for(i = 0; i < roiManager("count"); i++){
+		// select current roi
 		roiManager("select", i);
-		// save some calculated values for our if statement
-		// also calculate a few more for easier expressions
-		x1 = -1;//twoDArrayGet(coords2d, rcX, rcY, i, 0);
-		thisY = -1;//twoDArrayGet(coords2d, rcX, rcY, i, 1);
-		width1 = -1;//twoDArrayGet(coords2d, rcX, rcY, i, 2);
-		height1 = -1;//twoDArrayGet(coords2d, rcX, rcY, i, 3);
-		Roi.getBounds(x1, thisY, width1, height1);
-		diffFromRec = abs(thisY - mostRecentY);
-		// find out if we need to add to a new group
-		if(diffFromRec > groupTol){
-			curGroup++;
-		}//end if this Y is outside tolerance, need new group
-		// we want to add this roi to current group either way
-		roiManager("select", i);
-		Roi.setGroup(curGroup);
-	}//end looping over coordinates
+		// figure out current roi Y bounds
+		roiBounds = getRoiYBounds(); // y and (y+height)
+		// start testing all the groups to see if we can find something that works
+		for(j = 0; j < lengthOf(gridLowBound); j++){
+			// test location relation of roi and group
+			relLoc = locationRelation(gridLowBound[j],gridUpBound[j],0,roiBounds[0],roiBounds[1]);
+			if(relLoc[0] || relLoc[1]){
+				// TODO: Write code to add this roi to group j
+				Roi.setGroup(j);
+				gridLowBound[j] = Math.min(gridLowBound[j], roiBounds[0]);
+				gridUpBound[j] = Math.max(gridUpBound[j], roiBounds[1]);
+				// don't try adding this roi to any new groups
+				break;
+			}//end if we've found a matching group for this roi
+		}//end looping over the groups we want to test out
+		if(Roi.getGroup() == 0){
+			// TODO: Write code to make a new group
+			// change set group of selected roi
+			Roi.setGroup(lengthOf(gridLowBound));
+			// expand size of parallel arrays
+			gridLowBound = Array.concat(gridLowBound,roiBounds[0]);
+			gridUpBound = Array.concat(gridUpBound,roiBounds[1]);
+		}//end if we couldn't find a group and need to make a new one
+	}//end looping over rois we want to group
 	return 0;
 }//end constructGroups(coords2d, maxRows, maxRowLen)
 
@@ -1167,7 +1171,7 @@ function getRoiYBounds(){
 	roiY = -1;
 	roiHeight = -1;
 	temp = -1;
-	Roi.getBounds(roiY, temp, roiHeight, temp);
+	Roi.getBounds(temp, roiY, temp, roiHeight);
 	return newArray(roiY / 11.5, (roiY + roiHeight) / 11.5);
 }//end getRoiYBounds
 
