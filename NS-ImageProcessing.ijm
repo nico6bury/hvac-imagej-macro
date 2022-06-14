@@ -364,17 +364,19 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 			}//end if we're outputting raw coordinates
 			// reprocess the coordinates so they conform to each other a bit more
 			reprocessRois(pCellWidth, pCellHeight);
-						///////////////////////////////////////////////////////////////
-						        STOP!!!  OUTDATED CODE BEYOND THIS POINT!
-						///////////////////////////////////////////////////////////////
+			// sort the rois so that they're in order and labelled
+			sortGroupedRois();
 			// sort the groups without really touching the flags at all
-			sortGroups(coordGroups, maxRows, maxRowLen);
+			//sortGroups(coordGroups, maxRows, maxRowLen);
 			// print out the re-processed groups if we need to
 			if(shouldOutputRawCoords == true && false){ //TODO: Redo the printing stuff
 				printGroups(coordGroups,maxRows,maxRowLen,4,"Re-Processed Groups");
 			}//end if we're outputting raw coordinates
 			// rows grid, plus newrowflag for each row, plus 1 at the beginning
-			formCoordCount = maxRows + (maxRows * maxRowLen) + 1;
+			//formCoordCount = maxRows + (maxRows * maxRowLen) + 1;
+						///////////////////////////////////////////////////////////////
+						        STOP!!!  OUTDATED CODE BEYOND THIS POINT!
+						///////////////////////////////////////////////////////////////
 			// Puts all the coords from the 3d array into a 2d array with proper flags
 			formedCoords = moveTo2d(coordGroups, maxRows, formCoordCount);
 			// prints out formatted groups if necessary
@@ -842,7 +844,7 @@ function DynamicCoordGetter(shouldWait){
 }//end DynamicCoordGetter(shouldWait)
 
 // does not seem to work, so just ignore ig
-function preNormalizationSort(array,rcX,rcY,grpTol){ // TODO: Overhall preNormalizationSort
+function preNormalizationSort(array,rcX,rcY,grpTol){ // TODO: Maybe remove preNormalizationSort?
 	for(i = 0; i < rcX; i++){
 		// set current element as minimum
 		mRecX = twoDArrayGet(array,rcX,rcY,i,0);
@@ -1205,7 +1207,31 @@ function printGroups(grps,rcX,rcY,rcZ,filename){ // TODO: Overhall printGroups
 	File.close(fileVar);
 }//end printGroups(grps,rcZ,rcY,rcX,filename)
 
-function sortGroups(threeDArray, grpCnt, rcY){ // TODO: Overhall sortGroups
+/*
+ * Sorts the rois by equalizing the height of each row, 
+ * renaming each roi to match the row and column it's in,
+ * and then sorting the rois at the end to match the right order.
+ */
+function sortGroupedRois(){ // TODO: Finish sortGroupedRois()
+	// array to hold indices since last group
+	rowIndices = newArray(6);
+	rowIndicesCount = 0;
+	// array to hold recent group, set to first group
+	lastIndexGroup = -1;
+	// do initlialization for first index
+	if(roiManager("count") > 0){
+		rowIndices[0] = 0;
+		rowIndicesCount = 1;
+		roiManager("select", 0);
+		lastIndexGroup = Roi.getGroup();
+	}//end if we have any rois at all
+	// sort rois within each roi by equalizing height
+	for(i = 1; i < roiManager("count"); i++){
+		// TODO: Do stuff for equalizing height and renaming rois
+	}//end looping over rois
+}//end sortGroupedRois()
+
+function sortGroups(threeDArray, grpCnt, rcY){ // TODO: Remove function sortGroups
 	// sort the coordinates within their 3d array
 	for(i = 0; i < grpCnt; i++){
 		// sets most recent X as first X of first coord in i-th group
@@ -1234,7 +1260,7 @@ function sortGroups(threeDArray, grpCnt, rcY){ // TODO: Overhall sortGroups
 }//end sortGroups(threeDArray, grpCnt)
 
 // shrinks one coordinate to match Width and Height
-function shrinkRoi(w,h){ // TODO: shrinkCoord
+function shrinkRoi(w,h){
 	// get the bounds of the current roi
 	xi = -1; yi = -1; wi = -1; hi = -1;
 	Roi.getBounds(xi, yi, wi, hi);
@@ -1270,7 +1296,7 @@ function updateRoi(x, y, w, h){
 }//end updateRoi(x,y,w,h)
 
 // grows one coordinate to match width and height
-function growRoi(w,h){ // TODO: Overhall growCoord
+function growRoi(w,h){
 	// get the bounds of the current roi
 	xi = -1; yi = -1; wi = -1; hi = -1;
 	Roi.getBounds(xi, yi, wi, hi);
@@ -1288,7 +1314,7 @@ function growRoi(w,h){ // TODO: Overhall growCoord
 	}//end if difference between heights is greater than 0
 }//end growRoi(w,h)
 
-function reprocessRois(w,h){ // TODO: Overhall reprocessGroups
+function reprocessRois(w,h){
 	// reprocesses groups so the values line up a bit better
 	for(i = 0; i < roiManager("count"); i++){
 		roiManager("select", i);
@@ -1311,7 +1337,7 @@ function reprocessRois(w,h){ // TODO: Overhall reprocessGroups
  * Puts all the coords from threeDArray back into a 2d array with
  * the necessary flags added as part of the middle processing step.
  */
-function moveTo2d(threeDArray, grpCnt, formCoordCount){ // TODO: Overhall moveto2d
+function moveTo2d(threeDArray, grpCnt, formCoordCount){ // TODO: Remove function moveto2d
 	// Puts all the coords from the 3d array into a 2d array
 	// 2d array of stuff
 	formCoords = twoDArrayInit(formCoordCount, 4);
@@ -1805,38 +1831,6 @@ function getAllResults(columns){ // TODO: update getAllResults
 }//end getAllResults(columns)
 
 /*
- * This function returns a 2d array of coordinates for all the particles
- * detected in particle analysis or whatever else. It needs to be able
- * to access the X, Y, Width, and Height columns from the results 
- * diplay, so please make sure to set those properly with Set
- * Measurements. Returns the coordinates in the order of X, Y, Width,
- * and Height, with the "row" index of the 2d array accessing a
- * particular coordinate, and the "column" index of the array accessing
- * a particular feature (X, Y, Width, or Height) of that coordinate.
- * It should be noted that the number of rows will be nResults and the
- * number of columns 4 for the array returned.
- */
-function getCoordinateResults(){ // TODO: update getCoordinateResults
-	// gets coordinate results from results windows. Need bound rect
-	// save result columns we want
-	coordCols = newArray("BX","BY","Width","Height");
-	// first dimension length
-	rowNum = nResults;
-	// second dimension length
-	colNum = lengthOf(coordCols);
-	// initialize 2d array
-	coords = twoDArrayInit(rowNum, colNum);
-	// populate array with data
-	for(i = 0; i < rowNum; i++){
-		for(j = 0; j < colNum; j++){
-			twoDArraySet(coords, rowNum, colNum, i, j,
-			getResult(coordCols[j], i));
-		}//end looping through coord props
-	}//end looping through each coord
-	return coords;
-}//end getCoordinateResults()
-
-/*
  * saves the data results to the specified path
  */
 function saveDataResultsArray(resultsArray, rowT, colT, path, columns){ // TODO: update saveDataResultsArray
@@ -1998,64 +1992,6 @@ function twoDArraySwap(array,rowT,colT,rI1,rI2){
 }//end twoDArraySwap(array,rowT,colT,rI1,rI2)
 
 /*
- * sets a value in a 3d array
- */
-function threeDArraySet(array,yT,zT,x,y,z,val){
-	// sets a value in a 3d array
-	if((x * yT * zT + y * zT + z) >= lengthOf(array)){
-		return false;
-	}//end if out of bounds
-	else{
-		array[x * yT * zT + y * zT + z] = val;
-		return true;
-	}//end else we did fine.
-}//end threeDArraySet(array,xT,yT,zT,x,y,z,val)
-
-/*
- * gets a value from a 3d array
- */
-function threeDArrayGet(array,yT,zT,x,y,z){
-	// gets a value from a 3d array
-	return array[x * yT * zT + y * zT + z];
-}//end threeDArrayGet(array,xT,yT,zT,x,y,z)
-
-/*
- * creates a 3d array
- */
-function threeDArrayInit(xT, yT, zT){
-	// creates a 3d array
-	return newArray(xT * yT * zT);
-}//end threeDArrayInit(xT, yT, zT)
-
-/*
- * swaps two indices of a 3d array
- */
-function threeDArraySwap(array,yT,zT,x1,y1,z1,x2,y2,z2){
-	// swaps two indices of a 3d array
-	arbitraryTempNewVarName1 = threeDArrayGet(array,yT,zT,x1,y1,z1);
-	arbitraryTempNewVarName2 = threeDArrayGet(array,yT,zT,x2,y2,z2);
-	threeDArraySet(array,yT,zT,x2,y2,z2,arbitraryTempNewVarName1);
-	threeDArraySet(array,yT,zT,x1,y1,z1,arbitraryTempNewVarName2);
-}//end threeDArraySwap(array,yT,zT,x1,y1,z1,x2,y2,z2)
-
-/*
- * swaps two parts of a 3d array
- */
-function threeDArraySwap(array,yT,zT,x1,y1,x2,y2){
-	// swaps two parts of a 3d array
-	// initialize arrays of what we've got
-	index1 = newArray(zT);
-	index2 = newArray(zT);
-	// figure out values and swap them
-	for(qq = 0; qq < zT; qq++){
-		arbitraryTempNewVarName1 = threeDArrayGet(array,yT,zT,x1,y1,qq);
-		arbitraryTempNewVarName2 = threeDArrayGet(array,yT,zT,x2,y2,qq);
-		threeDArraySet(array,yT,zT,x2,y2,qq,arbitraryTempNewVarName1);
-		threeDArraySet(array,yT,zT,x1,y1,qq,arbitraryTempNewVarName2);
-	}//end creating array from z
-}//end threeDArraySwap(array,yT,zT,x1,y1,x2,y2)
-
-/*
  * Just returns an array that represents a new row flag. cols is 
  * the number of columns to include in the flag. It won't work 
  * if you don't have at least one column for the area. 
@@ -2122,34 +2058,6 @@ function CellEndFlag(cols){ // TODO: Update CellEndFlag
 	}//end if we don't have enough values
 	return cellEndFlag;
 }//end CellEndFlag(cols)
-
-/*
- * prints an array out to a file
- */
-function debugPrintArray(d3A, xA, yA, zA, name){ // TODO: Remove references of outdated function
-	// build the file directory
-	fDir = File.getDirectory(chosenFilePath) + name + ".txt";
-	// open up the file
-	fileVar = File.open(fDir);
-	// loop over everything to print to the file
-	for(i = 0; i < xA; i++){
-		sb1 = "Row " + (i+1) + "\n";
-		for(j = 0; j < yA; j++){
-			sb2 = "[";
-			for(k = 0; k < zA; k++){
-				n = threeDArrayGet(d3A,yA,zA,i,j,k);
-				sb2 += d2s(n, 1);
-				if(k < zA - 1) sb2 += ", ";
-			}//end looping within coords
-			sb2 += "]";
-			if(j < yA - 1) sb2 += ", \n";
-			sb1 += sb2;
-		}//end looping within groups
-		if(i < xA - 1) sb1 += " \n";
-		print(fileVar, sb1);
-	}//end looping over groups
-	File.close(fileVar);
-}//end debugPrintArray(d3A, xA, yA, zA, name)
 
 ////////////////////// END OF EXTRA FUNCTIONS /////////////////
 ////////////////////// END OF PROGRAM DIALOG  /////////////////
