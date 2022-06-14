@@ -346,9 +346,6 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 		// initialize array of groups of coordinate sets
 		coordGroups = constructGroups(maxRows, maxRowLen, groupTol);
 		
-		///////////////////////////////////////////////////////////////
-		        STOP!!!  OUTDATED CODE BEYOND THIS POINT!
-		///////////////////////////////////////////////////////////////
 		
 		// check that groups went okay
 		if(false){// TODO: Fix up this error message somehow. Maybe Delete it?
@@ -365,11 +362,13 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 			if(shouldOutputRawCoords == true && false){ //TODO: Redo the printing stuff
 				printGroups(coordGroups,maxRows,maxRowLen,4,"Raw Groups");
 			}//end if we're outputting raw coordinates
+			// reprocess the coordinates so they conform to each other a bit more
+			reprocessRois(pCellWidth, pCellHeight);
+						///////////////////////////////////////////////////////////////
+						        STOP!!!  OUTDATED CODE BEYOND THIS POINT!
+						///////////////////////////////////////////////////////////////
 			// sort the groups without really touching the flags at all
 			sortGroups(coordGroups, maxRows, maxRowLen);
-			// reprocess the coordinates so they conform to each other a bit more
-			reprocessGroups(coordGroups, maxRows, maxRowLen, 4, mmCellWidth,
-			mmCellHeight);
 			// print out the re-processed groups if we need to
 			if(shouldOutputRawCoords == true && false){ //TODO: Redo the printing stuff
 				printGroups(coordGroups,maxRows,maxRowLen,4,"Re-Processed Groups");
@@ -1095,7 +1094,7 @@ function normalizeCellCount(){
  * be put within groups, as only items within groupTol of each other can
  * be within a group.
  */
-function constructGroups(maxRows,maxRowLen,groupTol){ // TODO: Overhall constructGroups
+function constructGroups(maxRows,maxRowLen,groupTol){
 	// initialize group bounds arrays
 	gridLowBound = newArray(0);
 	gridUpBound = newArray(0);
@@ -1234,111 +1233,79 @@ function sortGroups(threeDArray, grpCnt, rcY){ // TODO: Overhall sortGroups
 	return threeDArray;
 }//end sortGroups(threeDArray, grpCnt)
 
-function selectGroup(d3A, aXT, aYT, aZT, aX){ // TODO: Overhall selectGroup
-	// returns a 2d array holding the specified froup from d3A
-	output = twoDArrayInit(aYT, aZT);
-	for(i = 0; i < aYT; i++){
-		for(j = 0; j < aZT; j++){
-			// grab value from 3d array ...
-			val = threeDArrayGet(d3A,aYT,aZT,aX,i,j);
-			// ... and drop it into the 2d array
-			twoDArraySet(output, aYT, aZT, i, j, val);
-		}//end looping within coordinates
-	}//end looping over columns
-	return output;
-}//end selectGroup(d3A, aXT, aYT, aZT, aX)
+// shrinks one coordinate to match Width and Height
+function shrinkRoi(w,h){ // TODO: shrinkCoord
+	// get the bounds of the current roi
+	xi = -1; yi = -1; wi = -1; hi = -1;
+	Roi.getBounds(xi, yi, wi, hi);
+	diffW = wi - w;
+	diffH = hi - h;
+	if(diffW > 0){
+		xi += diffW / 2;
+		wi -= diffW;
+		// Change bounds of roi
+		updateRoi(xi, yi, wi, hi);
+	}//end if difference between widths is greater than 0
+	if(diffH > 0){
+		yi += diffH / 2;
+		hi -= diffH;
+		// Change bounds of roi
+		updateRoi(xi, yi, wi, hi);
+	}//end if difference between heights is greater than 0
+}//end shrinkRoi(w,h)
 
-/*
- * updates a group after you've taken it out as a slice using
- * selectGroup(). Necessary because of the lack of pointers.
- */
-function updateGroup(d3A, aXT, aYT, aZT, aX, d2A){ // TODO: Overhall updateGroup
-	// updates d3A with the group selection taken from selectGroup()
-	for(i = 0; i < aYT; i++){
-		for(j = 0; j < aZT; j++){
-			// grab value from 2d array ...
-			val = twoDArrayGet(d2A, aYT, aZT, i, j);
-			// ... and drop it into the 3d array
-			threeDArraySet(d3A,aYT,aZT,aX,i,j,val);
-		}//end looping within coordinates
-	}//end looping within a group
-}//end updateGroup(d3A, aXT, aYT, aZT, aX, d2A)
+function updateRoi(x, y, w, h){
+	// figure out what group is selected
+	index = roiManager("index");
+	// save group information
+	groupNum = Roi.getGroup();
+	// create rectangle with selected bounds
+	makeRectangle(x, y, w, h);
+	// update roi with selection
+	roiManager("update");
+	// reslect the roi we want
+	roiManager("select", index);
+	// add back the group information
+	Roi.setGroup(groupNum);
+}//end updateRoi(x,y,w,h)
 
-/*
- * resizes the coordinate in the specified 2d array of a single group
- * in order to conform to the given width and height.
- */
-function resizeGroup(grp, a2YT, a2ZT, W, H){ // TODO: Overhall resizeGroup
-	// resizes the coordinates to conform to given width and height
-	for(ii = 0; ii < a2YT; ii++){
-		// get the coords ready for this one
-		xx = twoDArrayGet(grp, a2YT, a2ZT, ii, 0);
-		yy = twoDArrayGet(grp, a2YT, a2ZT, ii, 1);
-		ww = twoDArrayGet(grp, a2YT, a2ZT, ii, 2);
-		hh = twoDArrayGet(grp, a2YT, a2ZT, ii, 3);
-		// shrink the this coord if it's too big
-		if(ww > W || hh > H){
-			shrinkCoord(grp,a2YT,a2ZT,ii,W,H);
-		}//end if we need to shrink
-		if(ww < W || hh < H){
-			growCoord(grp,a2YT,a2ZT,ii,W,H);
-		}//end if we need to grow
-	}//end looping over each coordinate
-}//exx = twoDArrayGet(grp, a2YT, a2ZT, a2YI, 0);
-
-function shrinkCoord(grp,a2YT,a2ZT,a2YI,W,H){ // TODO: shrinkCoord
-	// shrinks one coordinate to match Width and Height
-	diffW = twoDArrayGet(grp, a2YT, a2ZT, a2YI, 2) - W;
-	diffH = twoDArrayGet(grp, a2YT, a2ZT, a2YI, 3) - H;
+// grows one coordinate to match width and height
+function growRoi(w,h){ // TODO: Overhall growCoord
+	// get the bounds of the current roi
+	xi = -1; yi = -1; wi = -1; hi = -1;
+	Roi.getBounds(xi, yi, wi, hi);
+	diffW = w - wi;
+	diffH = h - hi;
 	if(diffW > 0){
-		xx = twoDArrayGet(grp, a2YT, a2ZT, a2YI, 0);
-		ww = twoDArrayGet(grp, a2YT, a2ZT, a2YI, 2);
-		xx += diffW / 2;
-		ww -= diffW;
-		twoDArraySet(grp,a2YT,a2ZT,a2YI,0,xx);
-		twoDArraySet(grp,a2YT,a2ZT,a2YI,2,ww);
-		diffW = twoDArrayGet(grp, a2YT, a2ZT, a2YI, 2) - W;
+		wi += diffW;
+		// Change bounds of roi
+		updateRoi(xi, yi, wi, hi);
 	}//end if difference between widths is greater than 0
 	if(diffH > 0){
-		yy = twoDArrayGet(grp, a2YT, a2ZT, a2YI, 1);
-		hh = twoDArrayGet(grp, a2YT, a2ZT, a2YI, 3);
-		yy += diffH / 2;
-		hh -= diffH;
-		twoDArraySet(grp,a2YT,a2ZT,a2YI,1,yy);
-		twoDArraySet(grp,a2YT,a2ZT,a2YI,3,hh);
-		diffH = twoDArrayGet(grp, a2YT, a2ZT, a2YI, 3) - H;
+		hi += diffH;
+		// Change bounds of roi
+		updateRoi(xi, yi, wi, hi);
 	}//end if difference between heights is greater than 0
-}//end shrinkCoord(grp,a2YT,a2ZT,a2YI,W,H)
+}//end growRoi(w,h)
 
-function growCoord(grp,a2YT,a2ZT,a2YI,W,H){ // TODO: Overhall growCoord
-	// grows one coordinate to match width and height
-	diffW = W - twoDArrayGet(grp, a2YT, a2ZT, a2YI, 2);
-	diffH = H - twoDArrayGet(grp, a2YT, a2ZT, a2YI, 3);
-	if(diffW > 0){
-		ww = twoDArrayGet(grp, a2YT, a2ZT, a2YI, 2);
-		ww += diffW;
-		twoDArraySet(grp,a2YT,a2ZT,a2YI,2,ww);
-		diffW = W - twoDArrayGet(grp, a2YT, a2ZT, a2YI, 2);
-	}//end if difference between widths is greater than 0
-	if(diffH > 0){
-		hh = twoDArrayGet(grp, a2YT, a2ZT, a2YI, 3);
-		hh += diffH;
-		twoDArraySet(grp,a2YT,a2ZT,a2YI,3,hh);
-		diffH = H - twoDArrayGet(grp, a2YT, a2ZT, a2YI, 3);
-	}//end if difference between heights is greater than 0
-}//end growCoord(grp,a2YT,a2ZT,a2YI,W,H)
-
-function reprocessGroups(d3Arr, arrXT, arrYT, arrZT, W, H){ // TODO: Overhall reprocessGroups
+function reprocessRois(w,h){ // TODO: Overhall reprocessGroups
 	// reprocesses groups so the values line up a bit better
-	for(i = 0; i < arrXT; i++){
-		// grabs the group as a 2d array so it's easier to handle
-		tGrp = selectGroup(d3Arr, arrXT, arrYT, arrZT, i);
-		// send the group over to be processed
-		resizeGroup(tGrp, arrYT, arrZT, W, H);
-		// send those new changes back over to the 3d array
-		updateGroup(d3Arr, arrXT, arrYT, arrZT, i, tGrp);
-	}//end looping over groups
-}//end reprocessGroups(d3Arr,arrXT,arrYT,arrZT)
+	for(i = 0; i < roiManager("count"); i++){
+		roiManager("select", i);
+		// get the bounds of the current roi
+		xi = -1; yi = -1; wi = -1; hi = -1;
+		Roi.getBounds(xi, yi, wi, hi);
+		// shrink this coor if it's too big
+		if(wi > w || hi > h){
+			// TODO: Shrink current roi
+			shrinkRoi(w,h);
+		}//end if we need to shrink this roi
+		if(wi < w || hi < h){
+			// TODO: Grow current roi
+			growRoi(w,h);
+		}//end if we need to grow this roi
+	}//end looping over each roi
+}//end reprocessRois(w,h)
 
 /*
  * Puts all the coords from threeDArray back into a 2d array with
