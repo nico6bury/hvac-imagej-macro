@@ -2059,6 +2059,28 @@ function CellEndFlag(cols){ // TODO: Update CellEndFlag
 	return cellEndFlag;
 }//end CellEndFlag(cols)
 
+/*
+ * Fixes the directory issues present with all the directory
+ * functions other than getDirectory("home"), which seems to
+ * be inexplicably untouched and therefore used as a basis
+ * for other directories.
+ */
+function fixDirectory(directory){
+	homeDirectory = getDirectory("home");
+	homeDirectory = substring(homeDirectory, 0, lengthOf(homeDirectory) - 1);
+	username = substring(homeDirectory, lastIndexOf(homeDirectory, File.separator)+1);
+	userStartIndex = indexOf(homeDirectory, username);
+	userEndIndex = lengthOf(homeDirectory);
+	
+	firstDirPart = substring(directory, 0, userStartIndex);
+	//print(firstDirPart);
+	thirdDirPart = substring(directory, indexOf(directory, File.separator, lengthOf(firstDirPart)));
+	//print(thirdDirPart);
+	
+	fullDirectory = firstDirPart + username + thirdDirPart;
+	return fullDirectory;
+}//end fixDirectory(directory)
+
 ////////////////////// END OF EXTRA FUNCTIONS /////////////////
 ////////////////////// END OF PROGRAM DIALOG  /////////////////
 
