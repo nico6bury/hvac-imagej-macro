@@ -266,21 +266,12 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 	setOption("Show All", false);
 	setOption("Show All", true);
 	// save things to where they need to go
-	if(shouldOutputRawCoords == true && false){// TODO: Fix this to use ROI saving
+	if(shouldOutputRawCoords == true){
 		if(shouldWaitForUserRaw){
 			showMessageWithCancel("Action Required",
 			"We will now save the raw coords file.");
 		}//end if we should wait for user
-		folderSpecifier = newFolderNameRaw;
-		if(outputToNewFolderRaw == false){
-			folderSpecifier = false;
-		}//end if we don't want a new folder
-		// quick fix for renaming files
-		fileNameBase = File.getName(chosenFilePath);
-		//actually save the coords
-		saveRawResultsArray(rawCoordResults,nResults,4,
-		chosenFilePath,newArray("BX","BY","Width","Height"),
-		folderSpecifier, rawCoordFilename + " - " + fileNameBase);
+		printGroups("RawCoords");
 		if(shouldWaitForUserRaw){
 			showMessageWithCancel("Action Required",
 			"The raw coords file has been successfully saved.");
@@ -358,7 +349,7 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 		}//end if we need to skip a grid
 		else{
 			// print out the raw groups if we need to
-			if(shouldOutputRawCoords == true && false){ //TODO: Redo the printing stuff
+			if(shouldOutputRawCoords == true && false){
 				printGroups(coordGroups,maxRows,maxRowLen,4,"Raw Groups");
 			}//end if we're outputting raw coordinates
 			// reprocess the coordinates so they conform to each other a bit more
@@ -366,8 +357,8 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 			// sort the rois so that they're in order and labelled
 			sortGroupedRois();
 			// print out the re-processed groups if we need to
-			if(shouldOutputRawCoords == true && false){ //TODO: Redo the printing stuff
-				printGroups(coordGroups,maxRows,maxRowLen,4,"Re-Processed Groups");
+			if(shouldOutputRawCoords == true){
+				printGroups("ReProcessedGroups");
 			}//end if we're outputting raw coordinates
 			// rows grid, plus newrowflag for each row, plus 1 at the beginning
 			//formCoordCount = maxRows + (maxRows * maxRowLen) + 1;
@@ -377,19 +368,8 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 			// Puts all the coords from the 3d array into a 2d array with proper flags
 			formedCoords = moveTo2d(coordGroups, maxRows, formCoordCount);
 			// prints out formatted groups if necessary
-			if(shouldOutputRawCoords && false){ //TODO: Redo the printing stuff
-				folderVar = "null";
-				if(outputToNewFolderRaw == true){
-					folderVar = newFolderNameRaw;
-				}//end if we're doing a new folder
-				else{
-					folderVar = false;
-					formPath += rawCoordFilename + ".txt";
-				}//end else we're not doing a new folder
-				saveRawResultsArray(formedCoords,gridCells,4,chosenFilePath,
-				newArray("BX","BY","Width","Height"),folderVar,
-				"Formatted Coordinates" + " - " +
-				File.getNameWithoutExtension(chosenFilePath));
+			if(shouldOutputRawCoords && false){
+				printGroups("FormattedCoordinates")
 			}//end if we're outputting raw coordinates
 			
 			// start processing seed information from each cell
@@ -840,54 +820,6 @@ function DynamicCoordGetter(shouldWait){
 	openBackup("coord", true);
 }//end DynamicCoordGetter(shouldWait)
 
-// does not seem to work, so just ignore ig
-function preNormalizationSort(array,rcX,rcY,grpTol){ // TODO: Maybe remove preNormalizationSort?
-	for(i = 0; i < rcX; i++){
-		// set current element as minimum
-		mRecX = twoDArrayGet(array,rcX,rcY,i,0);
-		mRecY = twoDArrayGet(array,rcX,rcY,i,1);
-		mRecInd = i;
-		// find actual minimum
-		for(j = i+1; j < rcX; j++){
-			if(twoDArrayGet(array,rcX,rcY,j,0) < mRecX){
-				if(abs(twoDArrayGet(array,rcX,rcY,j,1) - mRecY) <= grpTol){
-					mRecX = twoDArrayGet(array,rcX,rcY,j,0);
-					mRecY = twoDArrayGet(array,rcX,rcY,j,1);
-					mRecInd = j;
-				}//end if we found a compatible Y
-			}//end if we found a smaller X
-		}//end looping to try and find minimum with compatible Y
-		// figure out if we need to look again
-		if(mRecX == twoDArrayGet(array,rcX,rcY,i,0) && 
-		mRecY == twoDArrayGet(array,rcX,rcY,i,1)){
-			//find the lowest Y value
-			mRecY2 = 9999999;
-			mRecX2 = 9999999;
-			mRecInd2 = -1;
-			for(j = i+1; j < rcX; j++){
-				if(abs(twoDArrayGet(array,rcX,rcY,j,1) - mRecY) > grpTol &&
-				twoDArrayGet(array,rcX,rcY,j,1) <= mRecY2){
-					mRecY2 = twoDArrayGet(array,rcX,rcY,j,1);
-					mRecX2 = twoDArrayGet(array,rcX,rcY,j,0);
-					mRecInd2 = j;
-				}//end if we found a new minimum Y
-			}//end looping to find next lowest Y value
-
-			// we should now know the next Y, so now find matching X
-			for(j = i+1; j < rcX; j++){
-				if(twoDArrayGet(array,rcX,rcY,j,0) < mRecX && 
-				twoDArrayGet(array,rcX,rcY,j,1) == mRecY){
-					mRecX = twoDArrayGet(array,rcX,rcY,j,0);
-					mRecInd = j;
-				}//end if we found a new minimum X
-			}//end looping to find a new minimum X
-		}//end if we didn't find one in the same level
-
-		// either way, now we need to swap mRecInd-th element with i-th element
-		twoDArraySwap(array,rcX,rcY,mRecInd,i);
-	}//end looping over coords
-}//end preNormalizationSort()
-
 function deleteCorners(){
 	/* deletes regions of intererst which touch the corners of the image.
 	 This function is meant to work on rois that correspond to a cell, not
@@ -1070,13 +1002,8 @@ function normalizeCellCount(){
 			mRecY = thisY;
 		}//end looping over cells in rawCoordResults
 		// quick fix for renaming files
-		if(shouldOutputRawCoords == true){ //TODO: Redo printing for ROI
-			fileNameBase = File.getName(chosenFilePath);
-			folderSpecifier = newFolderNameRaw;
-			if(outputToNewFolderRaw == false) folderSpecifier = false;
-			saveRawResultsArray(coordRecord,gridCells,4,
-			chosenFilePath,newArray("BX","BY","Width","Height"),
-			folderSpecifier,"Corrected Coordinates - " + fileNameBase);
+		if(shouldOutputRawCoords == true){
+			printGroups("CorrectedCorrdinates");
 		}//end if we're outputting a file
 	}//end else if there are too many cells
 	else{
@@ -1174,35 +1101,18 @@ function getRoiYBounds(){
 	return newArray(roiY / 11.5, (roiY + roiHeight) / 11.5);
 }//end getRoiYBounds
 
-function printGroups(grps,rcX,rcY,rcZ,filename){ // TODO: Overhall printGroups
-	// print out a 3d array as a bunch of groups
-	// get our path stuff over with
-	filenameBase = File.getDirectory(chosenFilePath);
-	if(outputToNewFolderRaw == false){
-		filenameBase += filename;
-	}//end if we're not doing folders
-	else{
-		// build new folder into things
-		filenameBase += newFolderNameRaw + File.separator;
-		File.makeDirectory(filenameBase);
-		// add actual filename
-		filenameBase += filename;
-	}//end else we are doing folders
-	filenameBase += " - " + File.getNameWithoutExtension(chosenFilePath) + ".txt";
-	fileVar = File.open(filenameBase);
-	// now we can actually start writing to the file
-	for(i = 0; i < rcX; i++){
-		sb = "Row " + (i+1) + "\n";
-		for(j = 0; j < rcY; j++){
-			sb += "[BX " + d2s(threeDArrayGet(grps,rcY,rcZ,i,j,0),1) + ", ";
-			sb += "BY " + d2s(threeDArrayGet(grps,rcY,rcZ,i,j,1),1) + ", ";
-			sb += "Width " + d2s(threeDArrayGet(grps,rcY,rcZ,i,j,2),1) + ", ";
-			sb += "Height " + d2s(threeDArrayGet(grps,rcY,rcZ,i,j,3),1) + "]\n";
-		}//end looping over coordinates
-		print(fileVar, sb);
-	}//end looping over groups
-	File.close(fileVar);
-}//end printGroups(grps,rcZ,rcY,rcX,filename)
+function printGroups(filename){
+	// quick fix for renaming files
+	fileNameBase = File.getName(chosenFilePath);
+	// actually save the coordinates
+	finalPath = fileNameBase;
+	dirBase = File.getDirectory(chosenFilePath);
+	if(outputToNewFolderRaw){
+		dirBase += newFolderNameRaw + File.separator;
+		File.makeDirectory(dirBase);
+	}//end if we're saving to a new folder
+	roiManager("save", dirBase + fileNameBase + "-" + filename + ".zip");
+}//end printGroups(filename)
 
 /*
  * Sorts the rois by equalizing the height of each row, 
@@ -1320,102 +1230,15 @@ function reprocessRois(w,h){
 		Roi.getBounds(xi, yi, wi, hi);
 		// shrink this coor if it's too big
 		if(wi > w || hi > h){
-			// TODO: Shrink current roi
+			// Shrink current roi
 			shrinkRoi(w,h);
 		}//end if we need to shrink this roi
 		if(wi < w || hi < h){
-			// TODO: Grow current roi
+			// Grow current roi
 			growRoi(w,h);
 		}//end if we need to grow this roi
 	}//end looping over each roi
 }//end reprocessRois(w,h)
-
-/*
- * Puts all the coords from threeDArray back into a 2d array with
- * the necessary flags added as part of the middle processing step.
- */
-function moveTo2d(threeDArray, grpCnt, formCoordCount){ // TODO: Remove function moveto2d
-	// Puts all the coords from the 3d array into a 2d array
-	// 2d array of stuff
-	formCoords = twoDArrayInit(formCoordCount, 4);
-	// set last element as newrow flag
-	twoDArraySet(formCoords, formCoordCount, 4, formCoordCount-1, 0,-2);
-	twoDArraySet(formCoords, formCoordCount, 4, formCoordCount-1, 1,-2);
-	twoDArraySet(formCoords, formCoordCount, 4, formCoordCount-1, 2,-2);
-	twoDArraySet(formCoords, formCoordCount, 4, formCoordCount-1, 3,-2);
-	// initialize some counter variable
-		// current group we're working on
-		curGroup = 0;
-		// index of the current group we're working on
-		curGroupInd = 0;
-		// current index of formCoords that we can next put something into
-		cur2dInd = 0;
-	// loop over the groups
-	for(i = 0; i < grpCnt; i++){
-		//adds newLine flag to our 2darray
-		twoDArraySet(formCoords,formCoordCount,4,cur2dInd,0,-2);
-		twoDArraySet(formCoords,formCoordCount,4,cur2dInd,1,-2);
-		twoDArraySet(formCoords,formCoordCount,4,cur2dInd,2,-2);
-		twoDArraySet(formCoords,formCoordCount,4,cur2dInd,3,-2);
-		//increment formCoords index reference to account for newrowflag
-		cur2dInd++;
-		
-		// gets the x of fifth coordinate in i-th group
-		arbFlagVar = threeDArrayGet(threeDArray,maxRowLen,4,i,4,0);
-		if(arbFlagVar != -1){
-		   /*
-			* we just need to loop over the cells in this group,
-			* adding each of them to the 2d array
-			*/
-			for(j = 0; j < maxRowLen; j++){
-				for(k = 0; k < 4; k++){
-					// get the proper value
-					crdVl = threeDArrayGet(threeDArray,maxRowLen,4,i,j,k);
-					// set the proper value
-					twoDArraySet(formCoords,formCoordCount,4,cur2dInd,k,
-					crdVl);
-				}//end looping through coordinate information for one coord
-				// increment reference counter
-				cur2dInd++;
-			}//end looping over the i-th group
-		}//end if we have a group of six
-		else{
-		   /*
-			* we need an empty cell, followed by the four
-			* detected cells, followed by an empty cell
-			*/
-			// add in an empty cell
-			// adds emptycell flag to our 2darray
-			twoDArraySet(formCoords,formCoordCount,4,cur2dInd,0,-1);
-			twoDArraySet(formCoords,formCoordCount,4,cur2dInd,1,-1);
-			twoDArraySet(formCoords,formCoordCount,4,cur2dInd,2,-1);
-			twoDArraySet(formCoords,formCoordCount,4,cur2dInd,3,-1);
-			// increment formCoords index reference to account for flag
-			cur2dInd++;
-			// now we need to loop over the four
-			for(j = 0; j < maxRowLen-2; j++){
-				for(k = 0; k < 4; k++){
-					// get the proper value
-					crdVl = threeDArrayGet(threeDArray,maxRowLen,4,i,j,k);
-					// set the proper value
-					twoDArraySet(formCoords,formCoordCount,4,cur2dInd,k,
-					crdVl);
-				}//end looping through coordinate information for one coord
-				// increment reference counter
-				cur2dInd++;
-			}//end looping over the i-th group
-			// adds emptycell flag to our 2darray
-			twoDArraySet(formCoords,formCoordCount,4,cur2dInd,0,-1);
-			twoDArraySet(formCoords,formCoordCount,4,cur2dInd,1,-1);
-			twoDArraySet(formCoords,formCoordCount,4,cur2dInd,2,-1);
-			twoDArraySet(formCoords,formCoordCount,4,cur2dInd,3,-1);
-			// increment reference counter
-			cur2dInd++;
-		}//end else we have a group of four
-	}//end looping over the groups
-	// return the final 2d array
-	return formCoords;
-}//end moveTo2d(threeDArray)
 
 /*
  * 
