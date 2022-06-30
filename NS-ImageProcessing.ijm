@@ -346,7 +346,6 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 		// initialize array of groups of coordinate sets
 		coordGroups = constructGroups(maxRows, maxRowLen, groupTol);
 		
-		
 		// check that groups went okay
 		if(false){// TODO: Fix up this error message somehow. Maybe Delete it?
 			if(shouldShowRoutineErrors == true){
@@ -366,17 +365,15 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 			reprocessRois(pCellWidth, pCellHeight);
 			// sort the rois so that they're in order and labelled
 			sortGroupedRois();
-			// sort the groups without really touching the flags at all
-			//sortGroups(coordGroups, maxRows, maxRowLen);
 			// print out the re-processed groups if we need to
 			if(shouldOutputRawCoords == true && false){ //TODO: Redo the printing stuff
 				printGroups(coordGroups,maxRows,maxRowLen,4,"Re-Processed Groups");
 			}//end if we're outputting raw coordinates
 			// rows grid, plus newrowflag for each row, plus 1 at the beginning
 			//formCoordCount = maxRows + (maxRows * maxRowLen) + 1;
-						///////////////////////////////////////////////////////////////
-						        STOP!!!  OUTDATED CODE BEYOND THIS POINT!
-						///////////////////////////////////////////////////////////////
+						////////////////////////////////////////////////////////
+								STOP!!!  OUTDATED CODE BEYOND THIS POINT!		
+						////////////////////////////////////////////////////////
 			// Puts all the coords from the 3d array into a 2d array with proper flags
 			formedCoords = moveTo2d(coordGroups, maxRows, formCoordCount);
 			// prints out formatted groups if necessary
@@ -648,7 +645,7 @@ function deserializeAndShowDialog(){ // TODO: Update deserialization
 
 function serializationDirectory(){
 	// generates a directory for serialization
-	macrDir = getDirectory("macros");
+	macrDir = fixDirectory(getDirectory("macros"));
 	macrDir += "Macro-Configuration/";
 	File.makeDirectory(macrDir);
 	macrDir += "DurumImageProcessingConfig.txt";

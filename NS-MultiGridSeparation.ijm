@@ -261,7 +261,7 @@ function saveDialogConfig(){
 
 function serializationDirectory(){
 	// generates a directory for serialization
-	macrDir = getDirectory("macros");
+	macrDir = fixDirectory(getDirectory("macros"));
 	macrDir += "Macro-Configuration/";
 	File.makeDirectory(macrDir);
 	macrDir += "MultiGridSeparationConfig.txt";
