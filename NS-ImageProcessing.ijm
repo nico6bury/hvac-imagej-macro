@@ -1115,27 +1115,91 @@ function printGroups(filename){
 }//end printGroups(filename)
 
 /*
+ * When given a positive integer, this function converts the number
+ * into a string of letters which will have the same alphabetical order
+ * as the number's numerical order when compared to other numbers convertd
+ * with this function. The digits in the number are converted into letters q-z,
+ * and then a prefix is assigned based on length, using letters a-p. This is
+ * done so that numbers with 3 digits will come before numbers with 4 digits.
+ */
+function convertAlpha(n){
+	// the alphabet, useful for later probably
+	prefixes = newArray("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p");
+	suffices = newArray("q","r","s","t","u","v","w","x","y","z");
+	// figure out how many digits in n, assume positive integer
+	digits = Math.floor(Math.log10(n)) + 1;
+	// convert number to string so we can look at individual digits
+	numAsString = toString(n);
+	// we'll reserve q-z for replacing digits, and a-p for length prefix
+	// we'll stick the components in an array of strings, then join them at end
+	cmpnts = newArray(digits);
+	for(i = 0; i < lengthOf(numAsString); i++){
+		digit = floor(n / pow(10, i) % 10);
+		cmpnts[i] = suffices[digit];
+	}//end converting each digit of n to a letter
+	cmpnts = Array.reverse(cmpnts);
+	// the string we'll return
+	rtnStr = prefixes[digits] + "-" + String.join(cmpnts, "");
+	//print("n: " + n + "    a: " + rtnStr);
+	return rtnStr;
+}//end convertAlpha(n)
+
+/*
  * Sorts the rois by equalizing the height of each row, 
  * renaming each roi to match the row and column it's in,
  * and then sorting the rois at the end to match the right order.
+ * 
+ * At this point, the rois are grouped by row; we just need to
+ * ensure they're of the right order within each row
  */
-function sortGroupedRois(){ // TODO: Finish sortGroupedRois()
-	// array to hold indices since last group
-	rowIndices = newArray(6);
-	rowIndicesCount = 0;
+function sortGroupedRois(){
+	// stopgap solution to a problem I don't want to tangle with
+	letters = newArray("a","b","c","d","e","f","g","h","i","j","k","l","m","n",
+	"o","p","q","r","s","t","u","v","w","x","y","z");
 	// array to hold recent group, set to first group
 	lastIndexGroup = -1;
+	// array to hold height of last index
+	lastIndexHeight = -1; // this should be y pos
 	// do initlialization for first index
 	if(roiManager("count") > 0){
-		rowIndices[0] = 0;
-		rowIndicesCount = 1;
 		roiManager("select", 0);
 		lastIndexGroup = Roi.getGroup();
+		temp = -1; x0 = -1;
+		Roi.getBounds(x0, lastIndexHeight, temp, temp);
+		roiManager("rename", letters[lastIndexGroup] + "-" + convertAlpha(x0));
 	}//end if we have any rois at all
 	// sort rois within each roi by equalizing height
 	for(i = 1; i < roiManager("count"); i++){
 		// TODO: Do stuff for equalizing height and renaming rois
+		/*
+		 * At this point, we're on the second indice, and
+		 * lastIndexGroup should be the number of the first group
+		 */
+		// make sure we have the current index selected
+		roiManager("select", i);
+		curGroup = Roi.getGroup();
+		if(curGroup == lastIndexGroup){
+			// change just current roi height to last heigh
+			x1 = -1; y1 = -1; h1 = -1; w1 = -1;
+			Roi.getBounds(x1, y1, w1, h1);
+			makeRectangle(x1, lastIndexHeight, w1, h1);
+			roiManager("update");
+			roiManager("select", i);
+			Roi.setGroup(curGroup);
+			// rename roi to hopefully make it be sorted
+			roiManager("rename", letters[curGroup] + "-" + convertAlpha(x1));
+		}//end if we should equalize height
+		else{
+			// update variables for new group
+			lastIndexGroup = curGroup;
+			temp = -1; x2 = -1;
+			Roi.getBounds(x2, lastIndexHeight, temp, temp);
+			roiManager("rename", letters[curGroup] + "-" + convertAlpha(x2));
+		}//end else we should move to next group
 	}//end looping over rois
+	roiManager("sort");
+	roiManager("show none");
+	roiManager("show all with labels");
 }//end sortGroupedRois()
 
 function sortGroups(threeDArray, grpCnt, rcY){ // TODO: Remove function sortGroups
