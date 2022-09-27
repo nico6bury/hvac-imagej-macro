@@ -1170,11 +1170,6 @@ function sortGroupedRois(){
 	}//end if we have any rois at all
 	// sort rois within each roi by equalizing height
 	for(i = 1; i < roiManager("count"); i++){
-		// TODO: Do stuff for equalizing height and renaming rois
-		/*
-		 * At this point, we're on the second indice, and
-		 * lastIndexGroup should be the number of the first group
-		 */
 		// make sure we have the current index selected
 		roiManager("select", i);
 		curGroup = Roi.getGroup();
@@ -1201,34 +1196,6 @@ function sortGroupedRois(){
 	roiManager("show none");
 	roiManager("show all with labels");
 }//end sortGroupedRois()
-
-function sortGroups(threeDArray, grpCnt, rcY){ // TODO: Remove function sortGroups
-	// sort the coordinates within their 3d array
-	for(i = 0; i < grpCnt; i++){
-		// sets most recent X as first X of first coord in i-th group
-		mostRecentX = threeDArrayGet(threeDArray,rcY,4,i,0,0);
-		for(j = 0; j < rcY - 1; j++){
-			// find the minimum element in unsorted part of this group
-			// index (corresponds to j) of minimum that we've found
-			grpIndNxt = j;
-			// X of coordinate at grpIndNext
-			grpIndX = threeDArrayGet(threeDArray,rcY,4,i,grpIndNxt,0);
-			for(k = j + 1; k < rcY; k++){
-				// X of current coordinate in iteration
-				curIndX = threeDArrayGet(threeDArray,rcY,4,i,k,0);
-				if(curIndX < grpIndX && curIndX > 0){
-					grpIndNxt = k;
-					grpIndX = curIndX;
-				}//end if we found a new minimum
-			}//end looping over each forward coordinate in current group
-
-			// we know know the index of the next minimum
-			// so now we'll swap the minimum with the j-th element
-			threeDArraySwap(coordGroups,maxRowLen,4,i,j,i,grpIndNxt);
-		}//end looping over each coordinate in current group
-	}//end looping over each group
-	return threeDArray;
-}//end sortGroups(threeDArray, grpCnt)
 
 // shrinks one coordinate to match Width and Height
 function shrinkRoi(w,h){
