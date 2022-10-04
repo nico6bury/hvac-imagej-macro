@@ -18,6 +18,8 @@ lowTH = 60;
 hiTH = 185;
 // number of pixels per milimeter
 ppm = 11.5;
+// the normal results headings
+resultHeadings = newArray(/*"",*/"Area","X","Y","Perim.","Major","Minor","Angle","Circ.","AR","Round","Solidity");
 
 // whether or not we'll use batch mode, which really speeds things up
 useBatchMode = false;
@@ -362,11 +364,6 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 			}//end if we're outputting raw coordinates
 			// rows grid, plus newrowflag for each row, plus 1 at the beginning
 			//formCoordCount = maxRows + (maxRows * maxRowLen) + 1;
-						////////////////////////////////////////////////////////
-								STOP!!!  OUTDATED CODE BEYOND THIS POINT!		
-						////////////////////////////////////////////////////////
-			// Puts all the coords from the 3d array into a 2d array with proper flags
-			formedCoords = moveTo2d(coordGroups, maxRows, formCoordCount);
 			// prints out formatted groups if necessary
 			if(shouldOutputRawCoords && false){
 				printGroups("FormattedCoordinates")
@@ -385,12 +382,17 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 			// define all the possible column headers in results
 			columns = newArray("Area", "X", "Y", "Perim.", "Major", "Minor",
 			"Angle", "Circ.", "AR", "Round", "Solidity");
+			// loop through all the coordinates and process them
+			processFinalResults();
 			
-			/* loop through all the coordinates and process them */
+						////////////////////////////////////////////////////////
+								STOP!!!  OUTDATED CODE BEYOND THIS POINT!		
+						////////////////////////////////////////////////////////
+			/* loop through all the coordinates and process them
 			processResults(formedCoords, formCoordCount, 4, lowTH, hiTH, minSz1,
 			minSz2, columns, shouldOutputProccessed, outputToNewFolderProc,
 			shouldWaitForUserProc, procResultFilename, newFolderNameProc,
-			chosenFilePath);
+			chosenFilePath);//*/
 		}//end else we have business as usual
 	}//end else we have the right number of cells
 }//end looping over all the files we want to process
@@ -1439,6 +1441,166 @@ function recursiveMakeDirectory(directory){
 }//end recursiveMakeDirectory(directory)
 
 /*
+ * This function is meant to replace the functions for processKernel,
+ * processChalk, and processResults. It uses the new ROI stuff, but it's
+ * unfinished at the moment.
+ */
+function processFinalResults(){//TODO: Finish method
+	//set the scale
+	run("Set Scale...", "distance=11.5 known=1 unit=mm global");
+	// save a copy of the image so we don't mess up the original
+	makeBackup("resultProcess");
+	// clear the log
+	print("\\Clear");;
+	
+	// keep track of last group
+	lastGroup = 0;
+	
+	// save the imageid of the overall image
+	imgID = getImageID();
+	
+	// array of indices we need to hardcode for the 84-cell grid
+	hardcodes = newArray(0,4,40,44,80,83);
+	
+	// make sure the results table is up before we start
+	run("Set Measurements...",
+	"area centroid perimeter fit shape redirect=None decimal=2");
+	run("Measure");
+	setResult("Area", 0, 121);
+	
+	for(i = 0; i < roiManager("count"); i++){
+		// select the current roi
+		roiManager("select", i);
+		
+		// check whether this index is a special case
+		if(contains(hardcodes, i)){
+			if(i == 0){
+				printCellStart(resultHeadings);
+				printCellEnd(resultHeadings);
+			}//end if we should just print missing cell
+			if(i == 40 || i == 80){
+				printNewRow(resultHeadings);
+				printCellStart(resultHeadings);
+				printCellEnd(resultHeadings);
+			}//end if we should print new row first
+			if(i == 4 || i == 44){
+				printCellStart(resultHeadings);
+				printCellEnd(resultHeadings);
+				printNewRow(resultHeadings);
+			}//end if we should print missing cell first
+			if(i == 83){
+				printCellStart(resultHeadings);
+				printCellEnd(resultHeadings);
+			}//end if we should just print missing cell
+		}//end if this index is a special case
+		else if(isNewRow(i)){
+			// print new row to end of results
+			printNewRow(resultHeadings);
+		}//end if we have a new row
+		
+		// do our normal processing stuff
+		x1 = -1; y1 = -1; w1 = -1; h1 = -1;
+		Roi.getBounds(x1, y1, w1, h1);
+		
+		/// Pre-Cell Process
+		// print cell start flag at end of results
+		printCellStart(resultHeadings);
+		// save the name of what we'll call the duplicate window
+		windowName = "temporaryDuplicate";
+		// make selection of current cell
+		makeRectangle(x1, y1, w1, h1);
+		
+		/// Kernel Section
+		// duplicate our selection to separate window
+		run("Duplicate...", "title=" + windowName);
+		// backup "Dup"
+		makeBackup("Dup");
+		// Set the measurements for kernels
+		run("Set Measurements...",			
+		"area centroid perimeter fit shape redirect=None decimal=2");
+		// Set grayscale and thresholds
+		run("8-bit");
+		setAutoThreshold("Default dark");
+		setThreshold(lowTH, 255);
+		// Run analyze particles
+		run("Analyze Particles...",
+		"size=minSz1-maxSz2 circularity=0.1-1.00" + 
+		" show=[Overlay Masks] display");
+		/// Chalk Section
+		// close previous window (used for kernel)
+		close(windowName);
+		// open Dup backup
+		openBackup("Dup", false);
+		rename(windowName);
+		// Set the measurements for chalk
+		run("Set Measurements...",
+		"area centroid perimeter fit shape redirect=None decimal=2");
+		// Try to smooth image for some reason
+		run("Subtract Background...", "rolling=5 create");
+		// Set grayscale and threshold
+		run("8-bit");
+		setAutoThreshold("Default dark");
+		setThreshold(hiTH, 255);
+		// Run analyze particles
+		run("Analyze Particles...",
+		"size=minSz2-maxSz2 circularity=0.1-1.00" + 
+		" show=[Overlay Masks] display");
+		// Potentially output chalk pics
+		if(shouldOutputChalkPics){
+			// folder directory for our files to go in
+			chalkDir = getChalkPicPath(chosenDirectory, chosenFilePath,
+			File.getName(chosenFilePath));
+			// figure out what we want to name our file
+			chalkPicNm = chalkNames[chalkCounter] + ".tif";
+			// flatten image to keep overlays
+			run("Flatten");
+			// hopefully save the image
+			save(chalkDir + chalkPicNm);
+			// close the image we just saved to prevent ROI problems
+			close();
+		}//end if we're outputting chalk pics
+
+		/// Post-Cell Process
+		// Print cell end flag at end of results
+		printCellEnd(resultHeadings);
+		// close the duplicate window used for chalk
+		close(windowName);
+	}//end processing each roi
+}//end processFinalResults
+
+/*
+ * Returns true if the specified index is at the start of its row,
+ * determined by checking groups. Importantly, this function will return
+ * true if there is no buffer between new row flags, as it will not differentiate
+ * between the group of newRowFlags and that of normal cells.
+ */
+function isNewRow(index){
+	// first, figure out group of previous index
+	roiManager("select", index - 1);
+	prevGroup = Roi.getGroup();
+	roiManager("select", index);
+	curGroup = Roi.getGroup();
+	// test for difference of groups
+	if(prevGroup != curGroup && prevGroup != 0){
+		return true;
+	}//end if we need to have a new row
+	return false;
+}//end isNewRow(index)
+
+/*
+ * Returns true if the specified index should have a missing cell flag
+ * put before it. This is hardcoded for the 84 cell grid.
+ */
+function isMissingCell(index){
+	// this is just going to be hardcoded
+	hardcodes = newArray(0,4,40,44,80,83);
+	if(contains(hardcodes, index)){
+		return true;
+	}//end if this is one of the hardcoded indices
+	return false;
+}//end isMissingCell(index)
+
+/*
  * 
  */
 function processResults(fm2dCrd,x,y,lT,hT,mS1,mS2,col,f1,f2,wFP,fn1,fn2,od){ // TODO: Overhall processResults
@@ -1446,22 +1608,24 @@ function processResults(fm2dCrd,x,y,lT,hT,mS1,mS2,col,f1,f2,wFP,fn1,fn2,od){ //
 	run("Set Scale...", "distance=11.5 known=1 unit=mm global");
 	// save a copy of the image so we don't mess up the original
 	makeBackup("resultProcess");
-	// flip the image horizontally
-	run("Flip Horizontally");
 	// clear the log
 	print("\\Clear");;
 
-	// quick fix for renaming files
+	// keep track of last group
+	lastGroup = 0;
+
+	/*/ quick fix for renaming files
 	fileBase = File.getName(od);
-	fn1 += " - " + fileBase + " " + lowTH + "-"+hiTH;
+	fn1 += " - " + fileBase + " " + lowTH + "-"+hiTH;//*/
 	
-	// set up stuff for the file
+	/*/ set up stuff for the file
 	outputFileVar = false;
 	if(f1 == true){
 		if(f2 == true){
 			// get the base directory of the file we already have
 			baseDir = File.getDirectory(od);
 			// build the new directory
+	
 			newDir = baseDir + fn2;
 			// build the new filename
 			newName = newDir + File.separator + fn1 + ".txt";
@@ -1478,9 +1642,9 @@ function processResults(fm2dCrd,x,y,lT,hT,mS1,mS2,col,f1,f2,wFP,fn1,fn2,od){ //
 			// get our file variable figured out
 			outputFileVar = File.open(newName);
 		}//end else we can just drop it in the old folder
-	}//end if we should output a file of processed stuff
+	}//end if we should output a file of processed stuff*/
 	
-	// make the header
+	/*/ make the header
 	sb = "\t"; sb1 = "       ";
 	for(i = 0; i < lengthOf(col); i++){
 		sb += col[i] + "\t";
@@ -1491,11 +1655,12 @@ function processResults(fm2dCrd,x,y,lT,hT,mS1,mS2,col,f1,f2,wFP,fn1,fn2,od){ //
 	// output headers to file (if we want to)
 	if(outputFileVar != false){
 		print(outputFileVar, sb);
-	}//end if we're outputting a file
+	}//end if we're outputting a file*/
 
 	// helpful counter for later
 	chalkCounter = 0;
 	
+	/*/
 	for(i = 0; i < x; i++){
 		// check for flags
 		if(isMissingCellFlag(fm2dCrd,x,y,i,0) == true){
@@ -1585,11 +1750,12 @@ function processResults(fm2dCrd,x,y,lT,hT,mS1,mS2,col,f1,f2,wFP,fn1,fn2,od){ //
 				waitForUser("Action Required", "Duplcate Closed");
 			}//end if we should wait
 		}//end else we do things normally
-	}//end looping over coordinates
+	}//end looping over coordinates*/
 
+	/*/
 	if(f1 == true){
 		File.close(outputFileVar);
-	}//end if we need to close our file variable so we don't screw up the file
+	}//end if we need to close our file variable so we don't screw up the file*/
 }//end processResults(fm2dCrd,x,y,lT,hT,mS1,mS2,col,f1,f2,wFP,fn1,fn2,od)
 
 function isMissingCellFlag(d2A,xT,yT,x,y){ // TODO: Maybe Overhaul isMissingCellFlag
@@ -1867,12 +2033,25 @@ function NewRowFlag(cols){// TODO: Update NewRowFlag
 }//end NewRowFlag(cols)
 
 /*
+ * Prints a new row flag to the results table. Uses the
+ * column headings in parameter.
+ */
+function printNewRow(columnHeaders){
+	curResults = nResults;
+	flagVals = newArray(121.0, 4.3,
+	7.0, 45.0, 9.8, 90, 0.8, 1.6, 0.6, 1.0, 0, 0, 0);
+	for(i = 0; i < lengthOf(columnHeaders); i++){
+		setResult(columnHeaders[i], curResults, flagVals[i]);
+	}//end looping over each column header
+}//end printNewRow()
+
+/*
  * see NewRowFlag
  */
 function CellStartFlag(cols){// TODO: Update CellStartFlag
 	// 81.7
 	flagVals = newArray(81.7, 3.5, 5.9, 37.2, 13.2, 7.8, 90.0, 0.7,
-	1.7, 0.6, 1.0);
+	1.7, 0.6, 1.0, 0, 0, 0);
 	size = cols;
 	if(size < 1) size = 11;
 	cellStartFlag = newArray(cols);
@@ -1887,6 +2066,19 @@ function CellStartFlag(cols){// TODO: Update CellStartFlag
 	}//end if we don't have enough values
 	return cellStartFlag;
 }//end CellStartFlag(cols)
+
+/*
+ * Prints a cell start flag to the results table. Uses the
+ * column headings in parameter.
+ */
+function printCellStart(columnHeaders){
+	curResults = nResults;
+	flagVals = newArray(81.7, 3.5, 5.9, 37.2, 13.2, 7.8, 90.0, 0.7,
+	1.7, 0.6, 1.0, 0, 0, 0);
+	for(i = 0; i < lengthOf(columnHeaders); i++){
+		setResult(columnHeaders[i], curResults, flagVals[i]);
+	}//end looping over each column header
+}//end printCellStart(columnHeaders)
 
 /*
  * see NewRowFlag
@@ -1909,6 +2101,19 @@ function CellEndFlag(cols){ // TODO: Update CellEndFlag
 	}//end if we don't have enough values
 	return cellEndFlag;
 }//end CellEndFlag(cols)
+
+/*
+ * Prints a cell end flag to the results table. Uses the
+ * column headings in parameter.
+ */
+function printCellEnd(columnHeaders){
+	curResults = nResults;
+	flagVals = newArray(95.3, 3.9, 6.1, 39.8, 13.7, 8.8, 90.0, 0.8,
+	1.6, 0.6, 1.0, 0, 0, 0);
+	for(i = 0; i < lengthOf(columnHeaders); i++){
+		setResult(columnHeaders[i], curResults, flagVals[i]);
+	}//end looping over each column header
+}//end printCellEnd(columnHeader)
 
 /*
  * Fixes the directory issues present with all the directory
