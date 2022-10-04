@@ -255,7 +255,6 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 	chosenFilePath = filesToPrc[iijjkk];
 	open(chosenFilePath);
 	// start getting coordinates of cells
-	// TODO: Refactoriing Starts here
 	DynamicCoordGetter(shouldWaitForUserRaw);
 	// delete corners
 	deleteCorners();
@@ -384,15 +383,6 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 			"Angle", "Circ.", "AR", "Round", "Solidity");
 			// loop through all the coordinates and process them
 			processFinalResults();
-			
-						////////////////////////////////////////////////////////
-								STOP!!!  OUTDATED CODE BEYOND THIS POINT!		
-						////////////////////////////////////////////////////////
-			/* loop through all the coordinates and process them
-			processResults(formedCoords, formCoordCount, 4, lowTH, hiTH, minSz1,
-			minSz2, columns, shouldOutputProccessed, outputToNewFolderProc,
-			shouldWaitForUserProc, procResultFilename, newFolderNameProc,
-			chosenFilePath);//*/
 		}//end else we have business as usual
 	}//end else we have the right number of cells
 }//end looping over all the files we want to process
@@ -1273,153 +1263,6 @@ function reprocessRois(w,h){
 	}//end looping over each roi
 }//end reprocessRois(w,h)
 
-/*
- * 
- */
-function processKernel(X,Y,W,H,windowPattern,shouldWait,fileVar){ // TODO: Overhall processKernel
-	// make a selection and process the kernel
-
-	// make our selection, multiplying in order to convert to pixels from mm
-	makeRectangle(X * 11.5, Y * 11.5,
-	W * 11.5, H * 11.5);
-	if(shouldWait){
-		showMessageWithCancel("Action Required",
-		"Selection Made");
-	}//end if we should wait
-	// make a copy to work with
-	// get a little debugging info first
-	
-	run("Duplicate...", "title=[" + windowPattern + "]");
-	if(shouldWait){
-		showMessageWithCancel("Action Required",
-		"Selection Duplicated");
-	}//end if we should wait
-	// take a snapshot so we can reset later
-	makeBackup("Dup");
-	// set which things should be measured
-	run("Set Measurements...",
-	"area centroid perimeter fit shape redirect=None decimal=2");
-	// set the threshold
-	run("8-bit");
-	setAutoThreshold("Default dark");
-	setThreshold(lowTH, 255);
-	if(shouldWait){
-		showMessageWithCancel("Action Required",
-		"Kernel Threshold Set");
-	}//end if we should wait
-	resultsBefore = nResults;
-	// analyze particles
-	run("Analyze Particles...",
-	"size=minSz1-maxSz2 circularity=0.1-1.00" + 
-	" show=[Overlay Masks] display");
-	if(shouldWait){
-		showMessageWithCancel("Action Required",
-		"Kernel Particles Analyzed");
-	}//end if we should wait
-	resultsAfter = nResults;
-	if(resultsAfter - resultsBefore > 0){
-		// print kernel results over the log
-		kernelStuff = getAllResults(columns);
-		kernelForLog = newArray(lengthOf(columns));
-		kCount = lengthOf(kernelForLog);
-		for(j = 0; j < kCount; j++){
-			kernelForLog[j] = twoDArrayGet(kernelStuff,
-			lengthOf(kernelStuff)/lengthOf(columns),
-			lengthOf(columns), nResults-1, j);
-		}//end looping over all the columns of this line
-		currentLine++;
-		print(currentLine + "     " + dATS(1, kernelForLog, "     "));
-		if(fileVar != false){
-			print(fileVar, currentLine + "\t" + dATS(1, kernelForLog, "\t"));
-		}//end if we're doing a file
-		if(shouldWait){
-			showMessageWithCancel("Action Required",
-			"Kernel Results Printed");
-		}//end if we should wait
-	}//end if we detected a kernel
-}//end processKernel(x,y,width,height)
-
-/*
- * 
- */
-function processChalk(windowPattern, shouldWait, fileVar){ // TODO: Overhall processChalk
-	// process the duplicate for chalk
-	
-	// reset our copy so we can get chalk
-	close(windowPattern);
-	openBackup("Dup", false);
-	rename(windowPattern);
-	// set which things should be measured
-	run("Set Measurements...",
-	"area centroid perimeter fit shape redirect=None decimal=2");
-	// try to smooth image and trim tips
-	run("Subtract Background...", "rolling=5 create");
-	// set the threshold for the chalk
-	run("8-bit");
-	setAutoThreshold("Default dark");
-	setThreshold(hiTH, 255);
-	if(shouldWait){
-		showMessageWithCancel("Action Required",
-		"Chalk Threshold Set");
-	}//end if we should wait	
-	// analyze particles
-	resultNumBefore = nResults;
-	run("Analyze Particles...",
-	"size=minSz2-maxSz2 circularity=0.1-1.00" + 
-	" show=[Overlay Masks] display");
-	if(shouldWait){
-		showMessageWithCancel("Action Required", 
-		"Chalk Particles Analyzed");
-	}//end if we should wait
-	if(shouldOutputChalkPics){
-		// folder directory for our files to go in
-		chalkDir = getChalkPicPath(chosenDirectory, chosenFilePath,
-		File.getName(chosenFilePath));
-		// figure out what we want to name our file
-		chalkPicNm = chalkNames[chalkCounter] + ".tif";
-		// flatten image to keep overlays
-		run("Flatten");
-		// hopefully save the image
-		save(chalkDir + chalkPicNm);
-		// close the image we just saved to prevent ROI problems
-		close();
-	}//end if we're outputting chalk pics
-	// print chalk results to the log if there are any
-	chalkStuff = getAllResults(columns);
-	resultNumAfter = nResults;
-	if(resultNumBefore != resultNumAfter){
-		chalkRowT = resultNumAfter - resultNumBefore;
-		chalkColT = lengthOf(columns);
-		chalkForLog = twoDArrayInit(chalkRowT,chalkColT);
-		// put all the recent chalk data into chalkForLog
-		for(jj = 0; jj < chalkRowT; jj++){
-			currentLine++;
-			sb1 = "" + currentLine + "     ";
-			sb2 = "" + currentLine + "\t";
-			for(kk = 0; kk < chalkColT; kk++){
-				// put right data into chalkForLog
-				twoDArraySet(chalkForLog,chalkRowT,chalkColT,jj,kk,
-				twoDArrayGet(chalkStuff,lengthOf(chalkStuff) /
-				lengthOf(columns), lengthOf(columns), resultNumBefore
-				 + jj, kk));
-				// add stuff to be put in log or printed
-				val = twoDArrayGet(chalkForLog,chalkRowT,chalkColT,jj,kk);
-				sb1 += d2s(val, 1) + "     ";
-				if(fileVar != false) sb2 += d2s(val, 1) + "\t";
-			}//end looping through data for this particle
-			// print that stuff out if we need to do so
-			print(sb1);
-			if(fileVar != false){
-				print(fileVar, sb2);
-			}//end if we're print stuff to a file
-			if(shouldWait){
-				showMessageWithCancel("Action Required",
-				"Chalk Results Printed to Log");
-			}//end if we should wait
-		}//end looping over each particle detected
-	}//end if we detected something
-}//end processChalk(windowPattern)
-
 function getChalkPicPath(directory, imgPath, fldrName){
 	// gets the path that the chalk pictures for an image should be writ to
 	imgLclDir = File.getDirectory(imgPath);
@@ -1445,7 +1288,7 @@ function recursiveMakeDirectory(directory){
  * processChalk, and processResults. It uses the new ROI stuff, but it's
  * unfinished at the moment.
  */
-function processFinalResults(){//TODO: Finish method
+function processFinalResults(){
 	//set the scale
 	run("Set Scale...", "distance=11.5 known=1 unit=mm global");
 	// save a copy of the image so we don't mess up the original
@@ -1600,177 +1443,6 @@ function isMissingCell(index){
 	return false;
 }//end isMissingCell(index)
 
-/*
- * 
- */
-function processResults(fm2dCrd,x,y,lT,hT,mS1,mS2,col,f1,f2,wFP,fn1,fn2,od){ // TODO: Overhall processResults
-	// set the scale
-	run("Set Scale...", "distance=11.5 known=1 unit=mm global");
-	// save a copy of the image so we don't mess up the original
-	makeBackup("resultProcess");
-	// clear the log
-	print("\\Clear");;
-
-	// keep track of last group
-	lastGroup = 0;
-
-	/*/ quick fix for renaming files
-	fileBase = File.getName(od);
-	fn1 += " - " + fileBase + " " + lowTH + "-"+hiTH;//*/
-	
-	/*/ set up stuff for the file
-	outputFileVar = false;
-	if(f1 == true){
-		if(f2 == true){
-			// get the base directory of the file we already have
-			baseDir = File.getDirectory(od);
-			// build the new directory
-	
-			newDir = baseDir + fn2;
-			// build the new filename
-			newName = newDir + File.separator + fn1 + ".txt";
-			// make sure the folder actually exists
-			File.makeDirectory(newDir + File.separator);
-			// get our file variable figured out
-			outputFileVar = File.open(newName);
-		}//end if we should output to a new folder
-		else{
-			// get the directory of the file we're proccing
-			baseDir = File.getDirectory(od);
-			// build the new filename from that directory
-			newName = baseDir + File.separator + fn1 + ".txt";
-			// get our file variable figured out
-			outputFileVar = File.open(newName);
-		}//end else we can just drop it in the old folder
-	}//end if we should output a file of processed stuff*/
-	
-	/*/ make the header
-	sb = "\t"; sb1 = "       ";
-	for(i = 0; i < lengthOf(col); i++){
-		sb += col[i] + "\t";
-		sb1 += col[i] + "    ";
-	}//end looping for each column
-	// output headers to log
-	print(sb1);
-	// output headers to file (if we want to)
-	if(outputFileVar != false){
-		print(outputFileVar, sb);
-	}//end if we're outputting a file*/
-
-	// helpful counter for later
-	chalkCounter = 0;
-	
-	/*/
-	for(i = 0; i < x; i++){
-		// check for flags
-		if(isMissingCellFlag(fm2dCrd,x,y,i,0) == true){
-			if(wFP){
-				showMessageWithCancel("Action Required",
-				"Found Missing Cell Flag");
-			}//end if we should wait
-			// add cell start
-			currentLine++;
-			startFlag = CellStartFlag(11);
-			if(f1){
-				print(outputFileVar, currentLine + "\t"
-				+ dATS(1, startFlag, "\t"));
-			}//end if we're outputting to the files
-			print(currentLine + "     " + dATS(1, startFlag, "     "));
-			// add the cell end
-			currentLine++;
-			endFlag = CellEndFlag(11);
-			if(f1){
-				print(outputFileVar, currentLine + "\t" +
-				dATS(1, endFlag, "\t"));
-			}//end if we're outputting to the files
-			print(currentLine + "     " + dATS(1, endFlag, "     "));
-		}//end if we have a missing cell flag
-		else if(isNewRowFlag(fm2dCrd,x,y,i,0) == true){
-			if(wFP){
-				showMessageWithCancel("Action Required",
-				"Found New Row Flag");
-			}//end if we should wait
-			// new row flag
-			currentLine++;
-			rowFlag = NewRowFlag(11);
-			if(f1){
-				print(outputFileVar,currentLine + "\t" +
-				dATS(1, rowFlag, "\t"));
-			}//end if we're outputting files
-			print(currentLine + "     " + dATS(1, rowFlag, "     "));
-		}//end else if we have a new row flag
-		else{
-			// the bounding X for this cell
-			thisBX = twoDArrayGet(fm2dCrd, x, y, i, 0);
-			// the bounding Y for this cell
-			thisBY = twoDArrayGet(fm2dCrd, x, y, i, 1);
-			// the bounding width for this cell
-			thisWidth = twoDArrayGet(fm2dCrd, x, y, i, 2);
-			// the bounding height for this cell
-			thisHeight = twoDArrayGet(fm2dCrd, x, y, i, 3);
-
-			if(wFP){
-				showMessageWithCancel("Action Required",
-				"Coordinates Recieved");
-			}//end if we should wait
-
-			currentLine++;
-
-			// add cell start
-			startFlag = CellStartFlag(11);
-			if(f1){
-				print(outputFileVar, currentLine + "\t"
-				+ dATS(1, startFlag, "\t"));
-			}//end if we're outputting to the files
-			print(currentLine + "     " + dATS(1, startFlag, "     "));
-	
-			// set the pattern for the window
-			windowPattern = "temporary duplicate";
-	
-			// process the kernel
-			processKernel(thisBX, thisBY, thisWidth,
-			thisHeight, windowPattern, wFP, outputFileVar);
-	
-			// process the chalk
-			processChalk(windowPattern, wFP, outputFileVar);
-			// increment chalk counter
-			chalkCounter++;
-	
-			// add the cell end
-			currentLine++;
-			endFlag = CellEndFlag(11);
-			if(f1){
-				print(outputFileVar, currentLine + "\t" +
-				dATS(1, endFlag, "\t"));
-			}//end if we're outputting to the files
-			print(currentLine + "     " + dATS(1, endFlag, "     "));
-			// close this duplicate
-			close(windowPattern);
-			if(wFP){
-				waitForUser("Action Required", "Duplcate Closed");
-			}//end if we should wait
-		}//end else we do things normally
-	}//end looping over coordinates*/
-
-	/*/
-	if(f1 == true){
-		File.close(outputFileVar);
-	}//end if we need to close our file variable so we don't screw up the file*/
-}//end processResults(fm2dCrd,x,y,lT,hT,mS1,mS2,col,f1,f2,wFP,fn1,fn2,od)
-
-function isMissingCellFlag(d2A,xT,yT,x,y){ // TODO: Maybe Overhaul isMissingCellFlag
-	// -1
-	val = twoDArrayGet(d2A,xT,yT,x,y);
-	if(val == -1) return true;
-	else return false;
-}//end 
-
-function isNewRowFlag(d2A,xT,yT,x,y){ // TODO: Maybe overhaul isNewRowFlag
-	// -2
-	val = twoDArrayGet(d2A,xT,yT,x,y);
-	if(val == -2) return true;
-	else return false;
-}//end 
 
 /*
  * returns an array as a string
@@ -1827,212 +1499,6 @@ function openBackup(appendation, shouldClose){
 }//end openBackup
 
 /*
- * Gets all the info from the results window, storing it
- * in a 2d array. the columns argument should be the name of
- * all the columns in the results window
- */
-function getAllResults(columns){ // TODO: update getAllResults
-	// gets info from results window, storing it in 2d array
-	rowNum = nResults;
-	colNum = lengthOf(columns);
-	// initialize output 2d array
-	output = twoDArrayInit(rowNum, colNum);
-	for(i = 0; i < rowNum; i++){
-		for(j = 0; j < colNum; j++){
-			twoDArraySet(output, rowNum, colNum,
-			i, j, getResult(columns[j], i));
-		}//end looping through each column
-	}//end looping through each row
-	
-	return output;
-}//end getAllResults(columns)
-
-/*
- * saves the data results to the specified path
- */
-function saveDataResultsArray(resultsArray, rowT, colT, path, columns){ // TODO: update saveDataResultsArray
-	// saves data results to specified path
-	fileVar = File.open(path);
-	// print columns
-	rowToPrint = "\t";
-	for(i = 0; i < lengthOf(columns); i++){
-		rowToPrint += columns[i] + "\t";
-	}//end looping over column headers
-	print(fileVar, rowToPrint);
-	// print array contents
-	for(i = 0; i < rowT; i++){
-		rowToPrint = "" + (i+1) + "\t";
-		for(j = 0; j < colT; j++){
-			thisInd = twoDArrayGet(resultsArray, rowT, colT, i, j);
-			rowToPrint = rowToPrint + d2s(thisInd, 2) + "\t";
-		}//end looping over columns
-		print(fileVar, rowToPrint);
-	}//end looping over rows
-	File.close(fileVar);
-}//end saveDataResultsArray(resultsArray, rowT, colT, path)
-
-/*
- * saves an array to a file. is more generic than saveDataResultsArray.
- * Parameter explanation: array=the array you want to save; rowT=the
- * length of the array's first dimension; colT=the length of the array's
- * second dimension; path=the path of your original image; headers=the
- * headers to display above the rows and columns; folder=whether or not
- * you want to save stuff in a new folder. This should be false or empty
- * if you don't want a new folder, or otherwise the name of the folder
- * you want to save stuff to; name=the name of the file you want
- * to save. Make sure this is a valid filename from the start, but
- * don't include the extension
- */
-function saveRawResultsArray(array,rowT,colT,path,headers,folder,name){ // TODO: update saveRawResultsArray
-	// saves array to specified path with other specifications
-	// initialize variable for the file stream
-	fileVar = saveRawResultsArrayIOHelper(path, folder, name);
-	// print columns
-	rowToPrint = "\t";
-	for(i = 0; i < lengthOf(headers); i++){
-		rowToPrint += headers[i] + "\t";
-	}//end looping over column headers
-	print(fileVar, rowToPrint);
-	// print array contents
-	for(i = 0; i < rowT; i++){
-		rowToPrint = "" + (i+1) + "\t";
-		for(j = 0; j < colT; j++){
-			// value at this element
-			thisInd = twoDArrayGet(array,rowT,colT,i,j);
-			rowToPrint = rowToPrint + d2s(thisInd, 2) + "\t";
-		}//end looping over columns
-		print(fileVar, rowToPrint);
-	}//end looping over rows
-	File.close(fileVar);
-}//end saveRawResultsArray(array,rowT,colT,path,headers,folder,name)
-
-/*
- * Helper method for saveRawResultsArray()
- */
-function saveRawResultsArrayIOHelper(path, folder, name){// TODO: update saveRawResultsArrayIOHelper
-	// helper method for saveRawResultsArray
-	// figure out our folder schenanigans
-	if(folder != false && folder != ""){
-		// base directory of the open file
-		print("path:"); print(path);
-		baseDirectory = File.getDirectory(path);
-		// create path of new subdirectory
-		baseDirectory += folder;
-		print("base directory:"); print(baseDirectory);
-		// make sure directory exists
-		File.makeDirectory(baseDirectory);
-		// add full filename to our new path
-		baseDirectory = baseDirectory + File.separator;
-		if(name == "" || lengthOf(name) <= 0){
-			enteredName = saveRawResultsArrayIOHelperDialogHelper();
-			baseDirectory = baseDirectory + enteredName + ".txt";
-		}//end if we need to get a name from the user!
-		else{
-			baseDirectory = baseDirectory + name + ".txt";
-			print("name:"); print(name);
-			print("base directory:"); print(baseDirectory);
-		}//end else we can proceed as normal
-		// get the file variable and return it
-		return File.open(baseDirectory);
-	}//end if we're doing a new folder
-	else{
-		// base directory of the file
-		fileBase = substring(path, 0,
-		lastIndexOf(path, File.separator));
-		// add separator if it was cut off
-		if(endsWith(fileBase, File.separator) == false){
-			fileBase += File.separator;
-		}//end if we need to add separator back
-		// get new name of the new file
-		resultFilename = name;
-		if(name == "" || lengthOf(name) <= 0){
-			resultFilename = saveRawResultsArrayIOHelperDialogHelper();
-		}//end if we need to get a new name from the user!
-		return File.open(fileBase + resultFilename + ".txt");
-	}//end else we don't need to mess with folders
-}//end saveRawResultsArrayIOHelper(path, folder, name)
-
-/*
- * A helper method for a helper method
- */
-function saveRawResultsArrayIOHelperDialogHelper(){ // TODO: Update saveRawResultsArrayIOHelperDialogueHelper
-	// a helper method for saveRawResultsArrayIOHelper
-	Dialog.create("Enter File Name");
-	Dialog.addMessage(
-	"It seems that at an earlier point in this programs execution, \n" +
-	"you entered a filename that was either invalid or improperly \n" +
-	"passed. Please enter a plain filename without a path or file \n" +
-	"extension here, so that I can save it properly.");
-	Dialog.addString("Filename:", "log");
-	Dialog.show();
-	return Dialog.getString();
-}//end saveRawResultsArrayIOHelperDialogHelper()
-
-/*
- * Sets a value in a 2d array
- */
-function twoDArraySet(array, rowT, colT, rowI, colI, value){
-	// sets a value in a 2d array
-	if((colT * rowI + colI) >= lengthOf(array)){
-		return false;
-	}//end if we are out of bounds
-	else{
-		array[colT * rowI + colI] = value;
-		return true;
-	}//end else we're fine to do stuff
-}//end twoDArraySet(array, rowT, colT, rowI, colI, value)
-
-/*
- * gets a value from a 2d array
- */
-function twoDArrayGet(array, rowT, colT, rowI, colI){
-	// gets a value from a 2d array
-	return array[colT * rowI + colI];
-}//end twoDArrayGet(array, rowT, colT, rowI, colI)
- 
-/*
- * creates a 2d array
- */
-function twoDArrayInit(rowT, colT){
-	// creates a 2d array
-	return newArray(rowT * colT);
-}//end twoDArrayInit(rowT, colT)
-
-function twoDArraySwap(array,rowT,colT,rI1,rI2){
-	tempArray = newArray(colT);
-	for(ijk = 0; ijk < colT; ijk++){
-		tempArray[ijk] = twoDArrayGet(array,rowT,colT,rI1,ijk);
-		rIV = twoDArrayGet(array,rowT,colT,rI2,ijk);
-		twoDArraySet(array,rowT,colT,rI1,ijk,rIV);
-		twoDArraySet(array,rowT,colT,rI2,ijk,tempArray[ijk]);
-	}//end looping over stuff
-}//end twoDArraySwap(array,rowT,colT,rI1,rI2)
-
-/*
- * Just returns an array that represents a new row flag. cols is 
- * the number of columns to include in the flag. It won't work 
- * if you don't have at least one column for the area. 
- * Recommended is 11
- */
-function NewRowFlag(cols){// TODO: Update NewRowFlag
-	// 121.0
-	flagVals = newArray(121.0, 4.3,
-	7.0, 45.0, 9.8, 90, 0.8, 1.6, 0.6, 1.0);
-	size = cols;
-	if(size < 1) size = 11;
-	newRowFlag = newArray(cols);
-	for(i = 0; i < cols && i < lengthOf(flagVals); i++){
-		newRowFlag[i] = flagVals[i];
-	}//end adding each arbitrary data point
-	if(size > lengthOf(flagVals)){
-		for(i = cols; i < lengthOf(newRowFlag); i++){
-			newRowFlag[i] = "121.0";
-		}//end looping over next indices of thing
-	}//end if we don't have enough values
-	return newRowFlag;
-}//end NewRowFlag(cols)
-
-/*
  * Prints a new row flag to the results table. Uses the
  * column headings in parameter.
  */
@@ -2044,28 +1510,6 @@ function printNewRow(columnHeaders){
 		setResult(columnHeaders[i], curResults, flagVals[i]);
 	}//end looping over each column header
 }//end printNewRow()
-
-/*
- * see NewRowFlag
- */
-function CellStartFlag(cols){// TODO: Update CellStartFlag
-	// 81.7
-	flagVals = newArray(81.7, 3.5, 5.9, 37.2, 13.2, 7.8, 90.0, 0.7,
-	1.7, 0.6, 1.0, 0, 0, 0);
-	size = cols;
-	if(size < 1) size = 11;
-	cellStartFlag = newArray(cols);
-	cellStartFlag[0] = "81.7";
-	for(i = 0; i < cols && i < lengthOf(flagVals); i++){
-		cellStartFlag[i] = flagVals[i];
-	}//end adding each arbitrary data point
-	if(size > lengthOf(flagVals)){
-		for(i = cols; i < lengthOf(cellStartFlag); i++){
-			cellStartFlag[i] = "81.7";
-		}//end looping over next indices of thing
-	}//end if we don't have enough values
-	return cellStartFlag;
-}//end CellStartFlag(cols)
 
 /*
  * Prints a cell start flag to the results table. Uses the
@@ -2079,28 +1523,6 @@ function printCellStart(columnHeaders){
 		setResult(columnHeaders[i], curResults, flagVals[i]);
 	}//end looping over each column header
 }//end printCellStart(columnHeaders)
-
-/*
- * see NewRowFlag
- */
-function CellEndFlag(cols){ // TODO: Update CellEndFlag
-	// 95.3
-	flagVals = newArray(95.3, 3.9, 6.1, 39.8, 13.7, 8.8, 90.0, 0.8,
-	1.6, 0.6, 1.0);
-	size = cols;
-	if(size < 1) size = 11;
-	cellEndFlag = newArray(cols);
-	cellEndFlag[0] = "95.3";
-	for(i = 1; i < cols && i < lengthOf(flagVals); i++){
-		cellEndFlag[i] = flagVals[i];
-	}//end adding each arbitrary data point
-	if(size > lengthOf(flagVals)){
-		for(i = cols; i < lengthOf(cellEndFlag); i++){
-			cellEndFlag[i] = "95.3";
-		}//end looping over next indices of thing
-	}//end if we don't have enough values
-	return cellEndFlag;
-}//end CellEndFlag(cols)
 
 /*
  * Prints a cell end flag to the results table. Uses the
@@ -2155,5 +1577,6 @@ run("Clear Results");
 if(isOpen("Results")){selectWindow("Results"); run("Close");}
 if(isOpen("Log")){selectWindow("Log"); run("Close");}
 if(shouldDisplayProgress){print(prgBarTitle,"\\Close");}
+if(isOpen("ROI Manager")){selectWindow("ROI Manager"); run("Close");}
 close("*");
 doCommand("Close All");
