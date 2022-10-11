@@ -136,9 +136,8 @@ function exportImage(originalFile, imageSuffix){
 	// the image we want to export should be already open
 	
 	// get the original filepath of the image, minus file name and extension
-	baseDir = substring(originalFile, 0, lastIndexOf(originalFile, File.separator) + 1);
-	originalName = substring(originalFile, lastIndexOf(originalFile,
-		File.separator), lastIndexOf(originalFile, "."));
+	baseDir = File.getDirectory(originalFile);
+	originalName = File.getNameWithoutExtension(originalFile);
 	
 	// figure out the location to put the image
 	if(outputNewDirectory == true){
