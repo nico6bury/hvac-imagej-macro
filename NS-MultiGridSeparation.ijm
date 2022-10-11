@@ -108,6 +108,10 @@ for(i = 0; i < lengthOf(imgToPrc); i++){
 		// open the current image
 		openBackup(imgKeys[j], false);
 		
+		// flip the image so that it's in the format expected
+		// by the NS-ImageProcessing macro
+		run("Flip Horizontally");
+		
 		// save the image of one grid somewhere near the original
 		exportImage(imgToPrc[i], "g" + (j+1));
 		
