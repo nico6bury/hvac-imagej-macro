@@ -382,7 +382,7 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 			columns = newArray("Area", "X", "Y", "Perim.", "Major", "Minor",
 			"Angle", "Circ.", "AR", "Round", "Solidity");
 			// loop through all the coordinates and process them
-			processFinalResults();
+			processFinalResults(procResultFilename, chosenFilePath);
 		}//end else we have business as usual
 	}//end else we have the right number of cells
 }//end looping over all the files we want to process
@@ -1288,9 +1288,12 @@ function recursiveMakeDirectory(directory){
  * processChalk, and processResults. It uses the new ROI stuff, but it's
  * unfinished at the moment.
  */
-function processFinalResults(){
+function processFinalResults(resultsName, filepath){
 	//set the scale
 	run("Set Scale...", "distance=11.5 known=1 unit=mm global");
+	// figure out what we'll name this file
+	fileBase = File.getName(filepath);
+	resultsName += " - " + fileBase + " " + lowTH + "-"+hiTH;
 	// save a copy of the image so we don't mess up the original
 	makeBackup("resultProcess");
 	// clear the log
@@ -1409,6 +1412,21 @@ function processFinalResults(){
 		// close the duplicate window used for chalk
 		close(windowName);
 	}//end processing each roi
+	
+	/// The following is just to save the results window in a new directory
+	
+	// get the base directory of the file we already have
+	baseDir = File.getDirectory(filepath);
+	// build the new directory
+	newDir = baseDir + newFolderNameProc;
+	// build the new filename
+	newName = newDir + File.separator + resultsName + ".txt";
+	// make sure the folder actually exists
+	File.makeDirectory(newDir + File.separator);
+	// make sure the results window is selected
+	selectWindow("Results");
+	// save the results window to a text file
+	save(newName);
 }//end processFinalResults
 
 /*
