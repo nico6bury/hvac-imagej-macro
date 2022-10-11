@@ -54,7 +54,7 @@ outputNewDirectory = true;
 // the filetypes that are allowed in directory selection
 allowedFiletypes = newArray(".tif");
 // files whose path contains one of these will be ignored by directory selection
-forbiddenStrings = newArray("-Fx","-fA2","-F","-Skip");
+forbiddenStrings = newArray("-Fx","-fA2","-F","-Skip", "separated");
 
 showDialog();
 
@@ -725,13 +725,15 @@ function areFilenamesValid(filenames, forbiddenStrings, allowDirectory){
 				booleanArray[i] = false;
 			}//end if wrong file extension
 			else{
-				filename = File.getName(filenames[i]);
+				//filename = File.getName(filenames[i]);
+				filename = filenames[i];
 				for(j = 0; j < lengthOf(forbiddenStrings); j++){
 					if(indexOf(filename, forbiddenStrings[j]) > -1){
 						foundString = true;
 						j = lengthOf(forbiddenStrings);
 					}//end if we found a forbidden string
 				}//end looping over forbiddenStrings
+				
 				if(foundString){
 					booleanArray[i] = false;
 				}//end if we found a forbidden string
