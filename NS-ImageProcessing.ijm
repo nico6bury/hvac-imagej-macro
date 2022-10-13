@@ -835,6 +835,9 @@ function deleteCorners(){
 	imgHeight = imgHeight / ppm;
 	// make array to keep track of indexes with corners
 	badInd = newArray();
+	// print out debug logging for deleteCorners
+	print("deleteCorners: xTolL=" + xTolL + "    xTolR=" + xTolR + "    yTolUp=" + yTolUp + "    yTolBot=" + yTolBot);
+	print("imgWidth=" + imgWidth + "    imgHeight=" + imgHeight);
 	// loop through and find corners
 	for(i = 0; i < roiManager("count"); i++){
 		// retrieve x,y,width,height for this index
@@ -842,27 +845,80 @@ function deleteCorners(){
 	 	d2x = -1; d2y = -1;
 	 	d2w = -1; d2h = -1;
 	 	Roi.getBounds(d2x, d2y, d2w, d2h);
+	 	// print out numbers for this index
+	 	print("roi:" + (i+1) + "    d2x=" + d2x + "    d2y=" + d2y + "    d2w=" + d2w + "    d2h=" + d2h);
+	 	// calculate closeness to sides
+	 	// if close to either left and right and either up or bottom at same time, then corner
+	 	closeLeft = abs(d2x - 0) < xTolL;
+	 	closeRight = abs((d2x+d2w) - imgWidth) < xTolR;
+	 	closeUp = abs(d2y - 0) < yTolUp;
+	 	closeBottom = abs((d2y+d2h) - imgHeight) < yTolBot;
+	 	
+	 	// only print out our math if we're waiting
+	 	if(shouldWaitForUserRaw){
+		 	// print out comparisons so it's clear what the conditionals are doing
+		 	print("closeness to left edge calculations:");
+		 	print("    abs(d2x) < xTolL");
+		 	print("      abs(" + d2x + ") < " + xTolL);
+		 	print("      " + abs(d2x) + " < " + xTolL);
+		 	print("      " + (abs(d2x) < xTolL) + " for closeness to left edge");
+		 	print("closeness to right edge calculations:");
+		 	print("    abs( (d2x+d2w) - imgWidth) < xTolR");
+		 	print("      abs( (" + d2x + " + " + d2w + ") - " + imgWidth + ") < " + xTolR);
+		 	print("      abs( (" + (d2x + d2w) + ") - " + imgWidth + ") < " + xTolR);
+		 	print("      abs(" + ((d2x + d2w) +imgWidth) + ") < " + xTolR);
+		 	print("      " + abs((d2x + d2w) +imgWidth) + " < " + xTolR);
+		 	print("      " + (abs((d2x + d2w) +imgWidth) < xTolR) + " for closeness to right edge");
+		 	print("closeness to upper edge calculations:");
+		 	print("    abs(d2y) < yTolUp");
+		 	print("      abs(" + d2y + ") < " + yTolUp);
+		 	print("      " + abs(d2y) + " < " + yTolUp);
+		 	print("      " + (abs(d2y) < yTolUp) + " for closeness to upper edge");
+		 	print("closeness to bottom edge calculations:");
+		 	print("    abs( (d2y+d2h) - imgHeight) < yTolBot");
+		 	print("      abs( (" + d2y + " + " + d2w + ") - " + imgHeight + ") < " + yTolBot);
+		 	print("      abs( (" + (d2y + d2h) + ") - " + imgHeight + ") < " + yTolBot);
+		 	print("      abs(" + ((d2y + d2h) +imgHeight) + ") < " + yTolBot);
+		 	print("      " + abs((d2y + d2h) +imgHeight) + " < " + yTolBot);
+		 	print("      " + (abs((d2y + d2h) +imgHeight) < yTolBot) + " for closeness to bottom edge");
+		 	print("conclusion for roi number " + (i+1) + ": " + ( (closeLeft || closeRight) && (closeUp || closeBottom) ) + " for bad index");
+		 	print("");
+	 	}//end if we should print out a bunch of stuff
+	 	
 	 	// test for top left corner
-	 	if(abs(d2x - 0) < xTolL && abs(d2y - 0) < yTolUp){
+	 	if(closeLeft && closeUp){
 	 		// keep track of index of corner
 	 		badInd = Array.concat(badInd,i);
 	 	}//end if we found top left corner
-	 	else if(abs((d2x+d2w) - imgWidth) < xTolR && abs(d2y - 0) < yTolUp){
+	 	else if(closeRight && closeUp){
 	 		// keep track of index of corner
 	 		badInd = Array.concat(badInd,i);
 	 	}//end else if we found the top right corner
-	 	else if(abs(d2x - 0) < xTolL && abs((d2y+d2h) - imgHeight) < yTolBot){
+	 	else if(closeLeft && closeBottom){
 	 		// keep track of index of corner
 	 		badInd = Array.concat(badInd,i);
 	 	}//end else if we found the bottom left corner
-	 	else if(abs((d2x+d2w) - imgWidth) < xTolR &&
-	 			abs((d2y+d2h) - imgHeight) < yTolBot){
+	 	else if(closeRight && closeBottom){
 	 		// keep track of index of corner
 	 		badInd = Array.concat(badInd,i);
 	 	}//end else if we found the bottom right corner
 	}//end looping over d2Array
+	
+	roiManager("show none");
+	roiManager("show all with labels");
+	
+	if(shouldWaitForUserRaw){
+		waitForUser("We've finished detecting corners. There were " + lengthOf(badInd) + " of them.");
+	}//end if we should wait
+	
+	
 	// just delete the non-corners
 	if(lengthOf(badInd) != 0){
+		if(shouldWaitForUserRaw){
+			print("Bad Indices");
+			Array.print(badInd);
+			waitForUser("We've detected " + lengthOf(badInd) + " apparent corners. We'll delete them.");
+		}//end if we should wait
 		roiManager("select", badInd);
 		roiManager("delete");
 	}// end if we have indices to delete
@@ -902,6 +958,11 @@ function deleteDuplicates(){
 	}//end looping over d2Array
 	// just delete the bad indices
 	if(lengthOf(badInd) != 0){
+		if(shouldWaitForUserRaw){
+			print("Bad Indices");
+			Array.print(badInd);
+			waitForUser("We've detected " + lengthOf(badInd) + " duplicate cells. We'll delete them.");
+		}//end if we should wait
 		roiManager("select", badInd);
 		roiManager("delete");
 	}//end if we have bad indices to delete
