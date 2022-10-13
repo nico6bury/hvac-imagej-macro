@@ -836,6 +836,7 @@ function deleteCorners(){
 	// make array to keep track of indexes with corners
 	badInd = newArray();
 	// print out debug logging for deleteCorners
+	print("\\Clear");
 	print("deleteCorners: xTolL=" + xTolL + "    xTolR=" + xTolR + "    yTolUp=" + yTolUp + "    yTolBot=" + yTolBot);
 	print("imgWidth=" + imgWidth + "    imgHeight=" + imgHeight);
 	// loop through and find corners
@@ -924,38 +925,71 @@ function deleteCorners(){
 	}// end if we have indices to delete
 }//end deleteCorners()
 
+function buildXYRoiCache(cacheX, cacheY){
+	for(i = 0; i < roiManager("count"); i++){
+		roiManager("select", i);
+		cachedX = -1;
+		cachedY = -1;
+		temp = -3;
+		Roi.getBounds(cachedX, cachedY, temp, temp);
+		cacheX[i] = cachedX;
+		cacheY[i] = cachedY;
+	}//end looping over all the rois
+}//end buildXYRoiCache
+
 function deleteDuplicates(){
 	// deletes elements in 2d array with very similar X and Y, returns new array
 	// tolerance for x values closeness
-	xTol = 2;
+	xTol = 2 * 11.5;
 	// tolerance for y values closeness
-	yTol = 5;
-	//Array.print(d2Array);
+	yTol = 5 * 11.5;
 	// array to hold index of bad coordinates
 	badInd = newArray(0);
+	// print out debug logging for deleteCorners
+	print("\\Clear");
+	print("deleteDuplicates: xTol=" + xTol + "    yTol=" + yTol);
+	// initialize caches for x and y coordinates
+	cache4X = newArray(roiManager("count"));
+	cache4Y = newArray(roiManager("count"));
+	buildXYRoiCache(cache4X, cache4Y);
 	// find extremely similar indexes
-	for(i = 0; i < roiManager("count"); i++){
+	for(i = 0; i < roiManager("count"); i++) {
 		// Note: might want to exclude processing of bad indexes here
-		roiManager("select", i);
 		if(contains(badInd, i) == false){
 			// get x and y for i
-			d2x = -1;//twoDArrayGet(d2Array, xT, yT, i, 0);
-			d2y = -1;//twoDArrayGet(d2Array, xT, yT, i, 1);
-			temp = -2;
-			Roi.getBounds(d2x, d2y, temp, temp);
-			for(j = i+1; j < roiManager("count"); j++){
-				roiManager("select", j);
-				d2x2 = -1;
-				d2y2 = -1;
-				Roi.getBounds(d2x, d2y, temp, temp);
+			d2x = cache4X[i];
+			d2y = cache4Y[i];
+			print("Outer: Roi=" + (i+1) + "    d2x=" + d2x + "    d2y=" + d2y);
+			// we check through next 12 indices or until there's aren't more rois
+			for(j = i+1; j < roiManager("count") && j < i+12; j++){
+				d2x2 = cache4X[j];
+				d2y2 = cache4Y[j];
+				print("      Comparing roi " + (i+1) + " with " + (j+1));
+				print("        d2x2=" + d2x2 + "    d2y2=" + d2y2);
 				diffX = abs(d2x - d2x2);
 				diffY = abs(d2y - d2y2);
+				if(shouldWaitForUserRaw){
+					print("        diffX = abs(d2x - d2x2) => abs(" + (d2x - d2x2) + ") => " + abs(d2x-d2x2));
+					print("        diffY = abs(d2y - d2y2) => abs(" + (d2y - d2y2) + ") => " + abs(d2y-d2y2));
+					print("        diffX < xTol && diffY < yTol => " + diffX + " < " + xTol + " && " + diffY + " < " + yTol);
+				}//end if anyone will care about our prints
 				if(diffX < xTol && diffY < yTol){
 					badInd = Array.concat(badInd,j);
+					if(shouldWaitForUserRaw){
+						print("");
+						print("  roi " + (j+1) + " is bad. We think it's a lower duplicate.");
+						print("");
+					}//end if anyone will care about our prints
 				}//end if this is VERY close to d2Array[i]
 			}//end looping all the rest of the array
 		}//end if this array is good
+		else if(shouldWaitForUserRaw){
+			print("Roi number " + (i+1) + " was skipped over in the outer if due to already being marked bad."); 
+		}//end else we should skip this index
 	}//end looping over d2Array
+	if(shouldWaitForUserRaw){
+		waitForUser("We've finished looking for duplicate cells, but haven't deleted anything yet");
+	}//end if we should wait so user can read stuff
 	// just delete the bad indices
 	if(lengthOf(badInd) != 0){
 		if(shouldWaitForUserRaw){
