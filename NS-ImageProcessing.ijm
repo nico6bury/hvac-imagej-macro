@@ -257,9 +257,9 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 	rawCoordResultsRowCount = nResults;
 	rawCoordResultsColCount = 4;
 	// delete corners
-	rawCoordResults2 = deleteCorners(rawCoordResults, rawCoordResultsRowCount, rawCoordResultsColCount);
+	//rawCoordResults2 = deleteCorners(rawCoordResults, rawCoordResultsRowCount, rawCoordResultsColCount);
 	// update raw coordinate results array
-	rawCoordResults = rawCoordResults2;
+	//rawCoordResults = rawCoordResults2;
 	rawCoordResultsRowCount = lengthOf(rawCoordResults) / rawCoordResultsColCount;
 	// displays options explanation
 	if(shouldWaitForUserRaw){
@@ -335,7 +335,7 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 		" to time, but we also run some procedures to correct this. Those procedures\n" +
 		" have failed. The file whose path is \n\"" + chosenFilePath + "\"\n will be" + 
 		"skipped. \nThere should have been " + gridCells + " cells, but instead we\n" +
-		"detected " + lengthOf(coordRecord) + " cells instead. If there are too few\n" +
+		"detected " + lengthOf(coordRecord) / rawCoordResultsColCount + " cells instead. If there are too few\n" +
 		"cells, this can be caused by certain tolerance values within the program\n" + 
 		"being a little bit off for some outlier images. If there are too many cells\n" +
 		", that can be caused by an abundance of seeds which are horizontal and\n" + 
@@ -399,7 +399,7 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 			run("Clear Results");
 			// size limit for analyzing whole kernel in mm^2
 			minSz1 = 4;
-			// size limit for analyzing as chalky area
+			// size limit for analyzing as chalky area (should be 1 for min size) // TODO: Experiments on size minimum
 			minSz2 = 1;
 			maxSz2 = 35;// amusingly, setting this to 15 is actually too small
 			// set line counter, which is a global variable
@@ -980,12 +980,14 @@ function deleteDuplicates(d2Array, xT, yT){
 				diffX = abs(d2x - twoDArrayGet(d2Array, xT, yT, j, 0));
 				diffY = abs(d2y - twoDArrayGet(d2Array, xT, yT, j, 1));
 				if(diffX < xTol && diffY < yTol){
-					/*print(twoDArrayGet(d2Array, xT, yT, j, 0));
-					  print(twoDArrayGet(d2Array, xT, yT, j, 1));
-					  print(twoDArrayGet(d2Array, xT, yT, j, 2));
-					  print(twoDArrayGet(d2Array, xT, yT, j, 3));
-					  waitForUser("diffX:" + diffX + " diffY:" + diffY +
-					  "\nx:" + d2x + " y:" + d2y);*/
+					print(twoDArrayGet(d2Array, xT, yT, j, 0));
+					print(twoDArrayGet(d2Array, xT, yT, j, 1));
+					print(twoDArrayGet(d2Array, xT, yT, j, 2));
+					print(twoDArrayGet(d2Array, xT, yT, j, 3));
+					if(shouldWaitForUserRaw){
+						waitForUser("diffX:" + diffX + " diffY:" + diffY +
+						"\nx:" + d2x + " y:" + d2y);
+					}
 					badInd = Array.concat(badInd,j);
 				}//end if this is VERY close to d2Array[i]
 			}//end looping all the rest of the array
@@ -1609,7 +1611,7 @@ function processResults(fm2dCrd,x,y,lT,hT,mS1,mS2,col,f1,f2,wFP,fn1,fn2,od){
 
 	// quick fix for renaming files
 	fileBase = File.getName(od);
-	fn1 += " - " + fileBase + " " + lowTH + "-"+hiTH;
+	fn1 += " - " + fileBase + " " + lowTH + "-"+hiTH + " minSz=" + minSz2;
 	
 	// set up stuff for the file
 	outputFileVar = false;
