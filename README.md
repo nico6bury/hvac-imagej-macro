@@ -1,3 +1,8 @@
+# NOTE:
+
+As of November 2022, the code in the root branch is not up to date, as it contains unfinished refactoring that isn't going to be worked on in the near future. For stable code, use the "legacy-version" branch.
+
+
 # usda-hvac-imagej-macro
 
 Macro for Hard V Amber Class Durum Kernel Scanning project for USDA-ARS
