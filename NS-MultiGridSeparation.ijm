@@ -785,7 +785,7 @@ function DynamicCoordGetter(shouldWait){
 	"bounding redirect=None decimal=1");
 	// set particle analysis to only detect the cells as particles
 	run("Analyze Particles...", 
-	"size=60-Infinity circularity=0.05-1.00 show=Nothing " +
+	"size=60-Infinity circularity=0.00-1.00 show=Nothing " +
 	"exclude clear include add");
 	if(shouldWait){
 		showMessageWithCancel("Action Required",
