@@ -772,7 +772,7 @@ function DynamicCoordGetter(shouldWait){
 		setThreshold(0, 200);
 	}//end if we're on Windows 10
 	else if(chosenOS == validOSs[1]){
-		setThreshold(0, 200);
+		setThreshold(0, 185);
 	}//end else if we're on Windows 7
 	if(shouldWait){
 		showMessageWithCancel("Action Required",
