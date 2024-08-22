@@ -299,6 +299,9 @@ for(iijjkk = 0; iijjkk < lengthOf(filesToPrc); iijjkk++){
 	// how close Y needs to be to be in a group
 	groupTol = 8;
 	// the preferred sizes for coordinate selections
+	// TODO: also the size in pixels of each grid cell
+	// for 300 dpi, this is 58w and 114h
+	// for 600 dpi, this is 116w and 228h
 	pCellWidth = 58;
 	pCellHeight = 114;
 	mmCellWidth = pCellWidth / 11.5; // should be ~5
